@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, memo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer } from "@/components/charts/chart-container";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
-import { fetchDataset, processContinentDistribution, processAsianTrends, processBigTech, type AsianTrendItem, type BigTechItem } from "@/lib/data/load-data";
+import type { ContinentDistributionItem, AsianTrendItem, BigTechItem } from "@/lib/data/load-data";
 
 const COLORS = {
   'North America': '#1f3b6f',
@@ -13,91 +13,64 @@ const COLORS = {
   'Others': '#c5c5c5',
 };
 
-export function StatsGrid() {
-  const [data, setData] = useState<{ name: keyof typeof COLORS; value: number }[]>([]);
-  const [topContinent, setTopContinent] = useState<{ name: keyof typeof COLORS; value: number } | null>(null);
-  const [asianGrowth, setAsianGrowth] = useState<{ growth: number; since: number } | null>(null);
-  const [bigTechAvg, setBigTechAvg] = useState<number | null>(null);
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const raw = await fetchDataset('papers');
-        const dist = processContinentDistribution(raw);
-        if (!active || dist.length === 0) return;
-        const totals = dist.reduce((acc, d) => {
-          acc.na += d['North America'];
-          acc.eu += d['Europe'];
-          acc.asia += d['Asia'];
-          acc.other += d['Others'];
-          return acc;
-        }, { na: 0, eu: 0, asia: 0, other: 0 });
-        const sum = totals.na + totals.eu + totals.asia + totals.other || 1;
-        const rows: { name: keyof typeof COLORS; value: number }[] = [
-          { name: 'North America', value: Number(((totals.na / sum) * 100).toFixed(2)) },
-          { name: 'Europe', value: Number(((totals.eu / sum) * 100).toFixed(2)) },
-          { name: 'Asia', value: Number(((totals.asia / sum) * 100).toFixed(2)) },
-          { name: 'Others', value: Number(((totals.other / sum) * 100).toFixed(2)) },
-        ];
-        setData(rows);
-        // Top continent KPI
-        const top = [...rows].sort((a, b) => b.value - a.value)[0];
-        setTopContinent(top);
-        // Asian growth KPI (overall percentage across all conferences), from earliest to latest year
-        const trends: AsianTrendItem[] = processAsianTrends(raw);
-        const years = Array.from(new Set(trends.map(t => t.year))).sort((a, b) => a - b);
-        if (years.length > 0) {
-          const first = years[0];
-          const last = years[years.length - 1];
-          const agg = (year: number) => {
-            const arr = trends.filter(t => t.year === year);
-            if (arr.length === 0) return 0;
-            const avg = arr.reduce((s, t) => s + t.percentage, 0) / arr.length;
-            return Number(avg.toFixed(2));
-          };
-          const pFirst = agg(first);
-          const pLast = agg(last);
-          const growth = Number((pLast - pFirst).toFixed(2));
-          setAsianGrowth({ growth, since: first });
-        }
-      } catch (e) {
-        // leave empty on error
-      }
-    })();
-    return () => { active = false };
-  }, []);
+interface StatsGridProps {
+  continentData: ContinentDistributionItem[];
+  asianTrends: AsianTrendItem[];
+  bigTechData: BigTechItem[];
+}
 
-  // Big Tech average KPI
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const raw = await fetchDataset('bigtech');
-        if (!active) return;
-        const items: BigTechItem[] = processBigTech(raw);
-        if (items.length > 0) {
-          const avg = items.reduce((s, d) => s + d.bigTech, 0) / items.length;
-          setBigTechAvg(Number(avg.toFixed(2)));
-        }
-      } catch (e) {
-        // ignore if dataset missing
-      }
-    })();
-    return () => { active = false };
-  }, []);
+export const StatsGrid = memo(function StatsGrid({ continentData, asianTrends, bigTechData }: StatsGridProps) {
+  const { data, topContinent, asianGrowth, bigTechAvg } = useMemo(() => {
+    const totals = { na: 0, eu: 0, asia: 0, other: 0 };
+    for (const d of continentData) {
+      totals.na += d['North America'];
+      totals.eu += d['Europe'];
+      totals.asia += d['Asia'];
+      totals.other += d['Others'];
+    }
+    
+    const sum = totals.na + totals.eu + totals.asia + totals.other || 1;
+    const rows = [
+      { name: 'North America' as const, value: Number(((totals.na / sum) * 100).toFixed(2)) },
+      { name: 'Europe' as const, value: Number(((totals.eu / sum) * 100).toFixed(2)) },
+      { name: 'Asia' as const, value: Number(((totals.asia / sum) * 100).toFixed(2)) },
+      { name: 'Others' as const, value: Number(((totals.other / sum) * 100).toFixed(2)) },
+    ];
+    const top = [...rows].sort((a, b) => b.value - a.value)[0];
+    
+    const years = Array.from(new Set(asianTrends.map(t => t.year))).sort((a, b) => a - b);
+    let ag: { growth: number; since: number } | null = null;
+    if (years.length > 0) {
+      const first = years[0];
+      const last = years[years.length - 1];
+      const getYearAvg = (year: number) => {
+        const items = asianTrends.filter(t => t.year === year);
+        if (!items.length) return 0;
+        return Number((items.reduce((s, t) => s + t.percentage, 0) / items.length).toFixed(2));
+      };
+      const pFirst = getYearAvg(first);
+      const pLast = getYearAvg(last);
+      ag = { growth: Number((pLast - pFirst).toFixed(2)), since: first };
+    }
+    
+    const btAvg = bigTechData.length > 0 
+      ? Number((bigTechData.reduce((s, d) => s + d.bigTech, 0) / bigTechData.length).toFixed(2))
+      : null;
+    
+    return { data: rows, topContinent: top, asianGrowth: ag, bigTechAvg: btAvg };
+  }, [continentData, asianTrends, bigTechData]);
 
   return (
     <div className="space-y-6">
-      {/* Stat Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="border-none shadow-lg bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/20 dark:to-background">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">Top Continent</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold tracking-tight bg-gradient-to-br from-blue-600 to-blue-800 bg-clip-text text-transparent">{topContinent ? `${topContinent.value}%` : '—'}</div>
+            <div className="text-4xl font-bold tracking-tight bg-gradient-to-br from-blue-600 to-blue-800 bg-clip-text text-transparent">{topContinent.value}%</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {topContinent ? `${topContinent.name} leads` : '—'}
+              {topContinent.name} leads
             </p>
           </CardContent>
         </Card>
@@ -125,11 +98,8 @@ export function StatsGrid() {
             </p>
           </CardContent>
         </Card>
-
-        
       </div>
 
-      {/* Chart Card */}
       <Card className="border-none shadow-xl">
         <CardHeader className="pb-4">
           <CardTitle className="text-xl font-semibold">Distribution by Continent</CardTitle>
@@ -138,7 +108,10 @@ export function StatsGrid() {
         <CardContent>
           <ChartContainer config={{}} className="h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
+              <PieChart 
+                role="img"
+                aria-label="Distribution by Continent pie chart showing percentage breakdown of academic papers across conferences"
+              >
                 <Pie
                   data={data}
                   cx="50%"
@@ -176,5 +149,4 @@ export function StatsGrid() {
       </Card>
     </div>
   );
-}
-
+});

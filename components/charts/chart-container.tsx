@@ -29,4 +29,3 @@ export function ChartTooltipContent({ children, ...props }: React.PropsWithChild
   return <div {...props}>{children}</div>
 }
 
-

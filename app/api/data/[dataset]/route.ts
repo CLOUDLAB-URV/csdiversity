@@ -5,10 +5,15 @@ import Papa from 'papaparse';
 
 const DATASET_TO_FILENAME: Record<string, string> = {
   papers: 'unifiedPaperData.csv',
-  citations: 'unifiedCitationsData.csv',
   committee: 'unifiedCommitteeData.csv',
   bigtech: 'big_companies_analysis_papers_new.csv',
 };
+
+export async function generateStaticParams() {
+  return Object.keys(DATASET_TO_FILENAME).map((dataset) => ({
+    dataset,
+  }));
+}
 
 export async function GET(
   _request: Request,

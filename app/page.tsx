@@ -1,8 +1,48 @@
 import { StatsGrid } from "@/components/dashboard/stats-grid";
 import { QuickStats } from "@/components/dashboard/quick-stats";
 import Link from "next/link";
+import { loadDatasetStatic } from "@/lib/data/load-data-static";
+import { processContinentDistribution, processAsianTrends, processBigTech } from "@/lib/data/load-data";
+import type { Metadata } from "next";
+import { Globe2, TrendingUp, Building2, Users, Info, UserCheck } from "lucide-react";
 
-import { Globe2, TrendingUp, Building2, Quote, Users, Info } from "lucide-react";
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+  description: "Comprehensive dashboard showing overview statistics and trends for academic conference data from systems and networks conferences including OSDI, ASPLOS, NSDI, SIGCOMM, EuroSys, and ATC. Explore continent distribution, Asian trends, Big Tech analysis, committee diversity, and more with interactive visualizations.",
+  keywords: [
+    "conference dashboard",
+    "academic statistics",
+    "conference metrics",
+    "research trends",
+    "academic data visualization",
+    "systems conferences",
+    "networks conferences",
+  ],
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "Conference Data Dashboard | Academic Conference Analysis",
+    description: "Comprehensive dashboard showing overview statistics and trends for academic conference data from top-tier systems and networks conferences. Interactive visualizations and analytics.",
+    url: baseUrl,
+    type: "website",
+    images: [
+      {
+        url: `${baseUrl}/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "Conference Data Dashboard",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Conference Data Dashboard | Academic Conference Analysis",
+    description: "Comprehensive dashboard showing overview statistics and trends for academic conference data",
+  },
+};
 
 const navItems = [
   {
@@ -27,11 +67,11 @@ const navItems = [
     gradient: "from-purple-500 to-pink-500",
   },
   {
-    title: "Citations Analysis",
-    description: "Analyze citation patterns and their geographic distribution",
-    href: "/citations",
-    icon: Quote,
-    gradient: "from-orange-500 to-red-500",
+    title: "Committee vs Papers",
+    description: "Compare geographic distribution between program committees and accepted papers",
+    href: "/committee-analysis",
+    icon: UserCheck,
+    gradient: "from-rose-500 to-pink-500",
   },
   {
     title: "Diversity Metrics",
@@ -49,10 +89,25 @@ const navItems = [
   },
 ];
 
-export default function Dashboard() {
+export default async function Dashboard() {
+  const [papersRaw, bigtechRaw] = await Promise.all([
+    loadDatasetStatic('papers'),
+    loadDatasetStatic('bigtech'),
+  ]);
+
+  const continentData = processContinentDistribution(papersRaw);
+  const asianTrends = processAsianTrends(papersRaw);
+  const bigTechData = processBigTech(bigtechRaw);
+
+  // Calculate QuickStats
+  const totalPapers = papersRaw.length;
+  const years = papersRaw.map((r: any) => Number(r.Year ?? r.year)).filter((n: any) => Number.isFinite(n));
+  const yearRange = years.length > 0 ? { min: Math.min(...years), max: Math.max(...years) } : null;
+  const confs = new Set<string>(papersRaw.map((r: any) => String(r.Conference ?? r.conference)).filter(Boolean));
+  const numConfs = confs.size;
+
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="space-y-2">
         <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent dark:from-gray-100 dark:via-gray-200 dark:to-gray-300">
           Conference Data Dashboard
@@ -62,13 +117,10 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* Quick Stats */}
-      <QuickStats />
+      <QuickStats totalPapers={totalPapers} yearRange={yearRange} numConfs={numConfs} />
 
-      {/* Main Stats and Chart */}
-      <StatsGrid />
+      <StatsGrid continentData={continentData} asianTrends={asianTrends} bigTechData={bigTechData} />
 
-      {/* Navigation Cards */}
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold tracking-tight">Explore Analysis</h2>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

@@ -7,12 +7,11 @@ export function Footer() {
             © {new Date().getFullYear()} Conference Data Visualizer
           </p>
           <p className="text-sm text-muted-foreground">
-            Data from OSDI, SOSP, ASPLOS, NSDI, SIGCOMM and more
+            Data from OSDI, ASPLOS, NSDI, SIGCOMM, EuroSys, ATC and more
           </p>
         </div>
       </div>
     </footer>
   );
 }
-
 

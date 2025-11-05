@@ -1,34 +1,14 @@
-"use client"
-
-import { useEffect, useMemo, useState } from "react";
+import { memo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, Calendar, Globe } from "lucide-react";
-import { fetchDataset } from "@/lib/data/load-data";
 
-export function QuickStats() {
-  const [totalPapers, setTotalPapers] = useState<number>(0);
-  const [yearRange, setYearRange] = useState<{ min: number; max: number } | null>(null);
-  const [numConfs, setNumConfs] = useState<number>(0);
+interface QuickStatsProps {
+  totalPapers: number;
+  yearRange: { min: number; max: number } | null;
+  numConfs: number;
+}
 
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const raw = await fetchDataset('papers');
-        if (!active) return;
-        setTotalPapers(raw.length);
-        const years = raw.map((r: any) => Number(r.Year ?? r.year)).filter((n: any) => Number.isFinite(n));
-        if (years.length > 0) {
-          setYearRange({ min: Math.min(...years), max: Math.max(...years) });
-        }
-        const confs = new Set<string>(raw.map((r: any) => String(r.Conference ?? r.conference)).filter(Boolean));
-        setNumConfs(confs.size);
-      } catch (e) {
-        // leave defaults if load fails
-      }
-    })();
-    return () => { active = false };
-  }, []);
+export const QuickStats = memo(function QuickStats({ totalPapers, yearRange, numConfs }: QuickStatsProps) {
 
   return (
     <div className="grid gap-6 md:grid-cols-3">
@@ -43,7 +23,7 @@ export function QuickStats() {
           </div>
         </CardHeader>
         <CardContent className="relative">
-          <div className="text-3xl font-bold">{totalPapers > 0 ? totalPapers.toLocaleString() : '—'}</div>
+          <div className="text-3xl font-bold">{totalPapers.toLocaleString()}</div>
           <p className="text-xs text-muted-foreground mt-1">
             Across all conferences
           </p>
@@ -79,7 +59,7 @@ export function QuickStats() {
           </div>
         </CardHeader>
         <CardContent className="relative">
-          <div className="text-3xl font-bold">{numConfs > 0 ? numConfs : '—'}</div>
+          <div className="text-3xl font-bold">{numConfs}</div>
           <p className="text-xs text-muted-foreground mt-1">
             Major systems conferences
           </p>
@@ -87,5 +67,5 @@ export function QuickStats() {
       </Card>
     </div>
   );
-}
+});
 

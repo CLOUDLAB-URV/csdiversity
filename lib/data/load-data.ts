@@ -1,4 +1,4 @@
-export async function fetchDataset(dataset: 'papers' | 'citations' | 'committee' | 'bigtech') {
+export async function fetchDataset(dataset: 'papers' | 'committee' | 'bigtech') {
   const res = await fetch(`/api/data/${dataset}`, { cache: 'no-store' });
   if (!res.ok) {
     const msg = await res.text().catch(() => '');
@@ -18,8 +18,6 @@ export interface ContinentDistributionItem {
 }
 
 export function processContinentDistribution(raw: any[]): ContinentDistributionItem[] {
-  // Expect CSV headers like: Conference, Year, Predominant Continent
-  // Aggregate counts per (conference, year) for each continent.
   const key = (v: any) => String(v ?? '').trim();
   const normConf = (c: string) => key(c).toUpperCase();
   const normCont = (c: string) => key(c).toUpperCase();
@@ -61,7 +59,6 @@ export interface AsianTrendItem {
 }
 
 export function processAsianTrends(raw: any[]): AsianTrendItem[] {
-  // Compute percentage of Asia-predominant papers per (conference, year)
   const key = (v: any) => String(v ?? '').trim();
   const normConf = (c: string) => key(c).toUpperCase();
   const normCont = (c: string) => key(c).toUpperCase();
@@ -97,65 +94,295 @@ export interface BigTechItem {
 }
 
 export function processBigTech(raw: any[]): BigTechItem[] {
-  // Supports two formats:
-  // 1) Long percentages per (Conference, Year, level_2 in {pct_has_big,pct_no_big,pct_all_none}, value in column '0')
-  // 2) Wide counts with has_big_tech / academic_count
-  const byKey = new Map<string, { conference: string; year: number; bt: number; ac: number; unk: number }>();
+  const byKey = new Map<string, { conference: string; year: number; bt: number; ac: number }>();
+  
   for (const r of raw) {
-    const conference = String((r.conference ?? r.Conference ?? '')).trim();
+    const conference = String((r.conference ?? r.Conference ?? '')).trim().toUpperCase();
     const year = Number(r.year ?? r.Year);
     if (!conference || !Number.isFinite(year)) continue;
     const k = `${conference}:${year}`;
-    const bucket = byKey.get(k) || { conference, year, bt: 0, ac: 0, unk: 0 };
+    
     if (r.level_2 && (r['0'] !== undefined)) {
       const cat = String(r.level_2).toLowerCase();
       const val = Number(r['0']);
-      if (cat === 'pct_has_big') bucket.bt += val;
-      else if (cat === 'pct_no_big') bucket.ac += val;
-      else if (cat === 'pct_all_none') bucket.unk += val;
+      
+      if (!byKey.has(k)) {
+        byKey.set(k, { conference, year, bt: 0, ac: 0 });
+      }
+      const bucket = byKey.get(k)!;
+      
+      if (cat === 'pct_has_big') {
+        bucket.bt = val;
+      } else if (cat === 'pct_no_big') {
+        bucket.ac = val;
+      }
     } else {
-      // Fallback to counts
+      if (!byKey.has(k)) {
+        byKey.set(k, { conference, year, bt: 0, ac: 0 });
+      }
+      const bucket = byKey.get(k)!;
       bucket.bt += Number(r.has_big_tech ?? r.big_tech_count ?? r.bigtech ?? 0);
       bucket.ac += Number(r.academic_count ?? r.academia ?? 0);
     }
-    byKey.set(k, bucket);
   }
+  
   const rows: BigTechItem[] = [];
-  byKey.forEach(({ conference, year, bt, ac, unk }) => {
-    // Normalize to percentages excluding unknown so BigTech + Academia = 100
-    const denom = (bt + ac) || 1;
-    const pBT = Number(((bt / denom) * 100).toFixed(2));
-    let pAC = Number(((ac / denom) * 100).toFixed(2));
-    // Ensure exact 100 with normalization
-    pAC = Number((100 - pBT).toFixed(2));
-    rows.push({ conference, year, bigTech: pBT, academia: Math.max(0, Math.min(100, pAC)) });
+  byKey.forEach(({ conference, year, bt, ac }) => {
+    let pBT = Number(bt.toFixed(2));
+    let pAC = Number(ac.toFixed(2));
+    
+    const total = pBT + pAC;
+    if (Math.abs(total - 100) > 0.1 && total > 0) {
+      pBT = Number(((pBT / total) * 100).toFixed(2));
+      pAC = Number((100 - pBT).toFixed(2));
+    } else if (total === 0) {
+      pBT = 0;
+      pAC = 0;
+    }
+    
+    rows.push({ 
+      conference, 
+      year, 
+      bigTech: Math.max(0, Math.min(100, pBT)), 
+      academia: Math.max(0, Math.min(100, pAC)) 
+    });
   });
+  
   return rows.sort((a, b) => a.year - b.year || a.conference.localeCompare(b.conference));
 }
 
-export interface CitationAggItem {
+export interface CommitteeVsPapersItem {
+  conference: string;
+  continent: string;
+  papersPercent: number;
+  committeePercent: number;
+  gap: number;
+}
+
+export function processCommitteeVsPapers(papersRaw: any[], committeeRaw: any[]): CommitteeVsPapersItem[] {
+  const normalizeCont = (c: string): string => {
+    const val = String(c ?? '').trim().toUpperCase();
+    if (['NA', 'NORTH AMERICA', 'NORTH_AMERICA', 'AMERICA'].includes(val)) return 'North America';
+    if (['EU', 'EUROPE'].includes(val)) return 'Europe';
+    if (['AS', 'ASIA'].includes(val)) return 'Asia';
+    if (['OC', 'OCEANIA', 'AF', 'AFRICA', 'SA', 'SOUTH AMERICA'].includes(val)) return 'Other';
+    if (!val || val === 'UNKNOWN') return 'Unknown';
+    return 'Other';
+  };
+
+  const papersByConf = new Map<string, Map<string, number>>();
+  for (const r of papersRaw) {
+    const conf = String(r.conference ?? r.Conference ?? '').trim().toUpperCase();
+    if (!conf) continue;
+    const cont = normalizeCont(r.predominant_continent ?? r['Predominant Continent'] ?? r.continent ?? '');
+    if (!papersByConf.has(conf)) papersByConf.set(conf, new Map());
+    const contMap = papersByConf.get(conf)!;
+    contMap.set(cont, (contMap.get(cont) ?? 0) + 1);
+  }
+
+  const committeeByConf = new Map<string, Map<string, number>>();
+  for (const r of committeeRaw) {
+    const conf = String(r.conference ?? r.Conference ?? '').trim().toUpperCase();
+    if (!conf) continue;
+    const cont = normalizeCont(r.continent ?? r.Continent ?? '');
+    if (!committeeByConf.has(conf)) committeeByConf.set(conf, new Map());
+    const contMap = committeeByConf.get(conf)!;
+    contMap.set(cont, (contMap.get(cont) ?? 0) + 1);
+  }
+
+  const allConfs = new Set([...papersByConf.keys(), ...committeeByConf.keys()]);
+  const continents = ['North America', 'Europe', 'Asia', 'Other', 'Unknown'];
+  const result: CommitteeVsPapersItem[] = [];
+
+  for (const conf of allConfs) {
+    const pMap = papersByConf.get(conf) ?? new Map();
+    const cMap = committeeByConf.get(conf) ?? new Map();
+    
+    const pTotal = Array.from(pMap.values()).reduce((s, v) => s + v, 0);
+    const cTotal = Array.from(cMap.values()).reduce((s, v) => s + v, 0);
+
+    if (pTotal === 0 && cTotal === 0) {
+      continue;
+    }
+
+    for (const cont of continents) {
+      const pCount = pMap.get(cont) ?? 0;
+      const cCount = cMap.get(cont) ?? 0;
+      
+      const pPct = pTotal > 0 ? Number(((pCount / pTotal) * 100).toFixed(2)) : 0;
+      const cPct = cTotal > 0 ? Number(((cCount / cTotal) * 100).toFixed(2)) : 0;
+      const gap = Number((cPct - pPct).toFixed(2));
+
+      result.push({
+        conference: conf,
+        continent: cont,
+        papersPercent: pPct,
+        committeePercent: cPct,
+        gap,
+      });
+    }
+  }
+
+  return result.sort((a, b) => a.conference.localeCompare(b.conference) || continents.indexOf(a.continent) - continents.indexOf(b.continent));
+}
+
+export interface CommitteeVsPapersByYearItem {
   conference: string;
   year: number;
-  accepted: number;
-  cited: number;
-  unknown: number;
+  continent: string;
+  papersPercent: number;
+  committeePercent: number;
+  gap: number;
 }
 
-export function processCitations(raw: any[]): CitationAggItem[] {
-  // Expect rows with fields like: Conference, Year, cited_by, unknown_count
-  const byKey = new Map<string, { accepted: number; cited: number; unknown: number; conference: string; year: number }>();
-  for (const r of raw) {
-    const conference = String((r.conference ?? r.Conference ?? '')).toUpperCase();
+export function processCommitteeVsPapersByYear(papersRaw: any[], committeeRaw: any[]): CommitteeVsPapersByYearItem[] {
+  const normalizeCont = (c: string): string => {
+    const val = String(c ?? '').trim().toUpperCase();
+    if (['NA', 'NORTH AMERICA', 'NORTH_AMERICA', 'AMERICA'].includes(val)) return 'North America';
+    if (['EU', 'EUROPE'].includes(val)) return 'Europe';
+    if (['AS', 'ASIA'].includes(val)) return 'Asia';
+    if (['OC', 'OCEANIA', 'AF', 'AFRICA', 'SA', 'SOUTH AMERICA'].includes(val)) return 'Other';
+    if (!val || val === 'UNKNOWN') return 'Unknown';
+    return 'Other';
+  };
+
+  const papersByConfYear = new Map<string, Map<string, number>>();
+  for (const r of papersRaw) {
+    const conf = String(r.conference ?? r.Conference ?? '').trim().toUpperCase();
     const year = Number(r.year ?? r.Year);
-    if (!conference || !Number.isFinite(year)) continue;
-    const k = `${conference}:${year}`;
-    const entry = byKey.get(k) || { accepted: 0, cited: 0, unknown: 0, conference, year };
-    entry.accepted += 1; // each row corresponds to an accepted paper
-    entry.cited += Number(r.cited_by ?? r.CitedBy ?? 0);
-    entry.unknown += Number(r.unknown_count ?? r.Unknown ?? 0);
-    byKey.set(k, entry);
+    if (!conf || !Number.isFinite(year)) continue;
+    const cont = normalizeCont(r.predominant_continent ?? r['Predominant Continent'] ?? r.continent ?? '');
+    const key = `${conf}:${year}`;
+    if (!papersByConfYear.has(key)) papersByConfYear.set(key, new Map());
+    const contMap = papersByConfYear.get(key)!;
+    contMap.set(cont, (contMap.get(cont) ?? 0) + 1);
   }
-  return Array.from(byKey.values()).sort((a, b) => a.year - b.year || a.conference.localeCompare(b.conference));
+
+  const committeeByConfYear = new Map<string, Map<string, number>>();
+  for (const r of committeeRaw) {
+    const conf = String(r.conference ?? r.Conference ?? '').trim().toUpperCase();
+    const year = Number(r.year ?? r.Year);
+    if (!conf || !Number.isFinite(year)) continue;
+    const cont = normalizeCont(r.continent ?? r.Continent ?? '');
+    const key = `${conf}:${year}`;
+    if (!committeeByConfYear.has(key)) committeeByConfYear.set(key, new Map());
+    const contMap = committeeByConfYear.get(key)!;
+    contMap.set(cont, (contMap.get(cont) ?? 0) + 1);
+  }
+
+  const allKeys = new Set([...papersByConfYear.keys(), ...committeeByConfYear.keys()]);
+  const continents = ['North America', 'Europe', 'Asia', 'Other', 'Unknown'];
+  const result: CommitteeVsPapersByYearItem[] = [];
+
+  for (const key of allKeys) {
+    const [conf, yearStr] = key.split(':');
+    const year = Number(yearStr);
+    const pMap = papersByConfYear.get(key) ?? new Map();
+    const cMap = committeeByConfYear.get(key) ?? new Map();
+    
+    const pTotal = Array.from(pMap.values()).reduce((s, v) => s + v, 0);
+    const cTotal = Array.from(cMap.values()).reduce((s, v) => s + v, 0);
+
+    if (pTotal === 0 && cTotal === 0) {
+      continue;
+    }
+
+    for (const cont of continents) {
+      const pCount = pMap.get(cont) ?? 0;
+      const cCount = cMap.get(cont) ?? 0;
+      
+      const pPct = pTotal > 0 ? Number(((pCount / pTotal) * 100).toFixed(2)) : 0;
+      const cPct = cTotal > 0 ? Number(((cCount / cTotal) * 100).toFixed(2)) : 0;
+      const gap = Number((cPct - pPct).toFixed(2));
+
+      result.push({
+        conference: conf,
+        year,
+        continent: cont,
+        papersPercent: pPct,
+        committeePercent: cPct,
+        gap,
+      });
+    }
+  }
+
+  return result.sort((a, b) => a.year - b.year || a.conference.localeCompare(b.conference) || continents.indexOf(a.continent) - continents.indexOf(b.continent));
 }
 
+function calculateGiniSimpson(counts: Map<string, number>): number {
+  const total = Array.from(counts.values()).reduce((sum, val) => sum + val, 0);
+  if (total === 0) return 0;
+  
+  let sumOfSquares = 0;
+  counts.forEach(count => {
+    const proportion = count / total;
+    sumOfSquares += proportion * proportion;
+  });
+  
+  return Number((1 - sumOfSquares).toFixed(4));
+}
 
+export interface DiversityData {
+  conference: string;
+  committee: number;
+  papers: number;
+}
+
+export function processDiversity(papersRaw: any[], committeeRaw: any[]): DiversityData[] {
+  const normalizeConf = (c: string): string => String(c ?? '').trim().toUpperCase();
+  const normalizeCont = (c: string): string => {
+    const val = String(c ?? '').trim().toUpperCase();
+    if (['NA', 'NORTH AMERICA', 'NORTH_AMERICA', 'AMERICA'].includes(val)) return 'North America';
+    if (['EU', 'EUROPE'].includes(val)) return 'Europe';
+    if (['AS', 'ASIA'].includes(val)) return 'Asia';
+    if (['OC', 'OCEANIA', 'AF', 'AFRICA', 'SA', 'SOUTH AMERICA'].includes(val)) return 'Other';
+    return 'Other';
+  };
+
+  const knownConferences = ['OSDI', 'ASPLOS', 'NSDI', 'SIGCOMM', 'EUROSYS', 'ATC'];
+
+  const papersByConf = new Map<string, Map<string, number>>();
+  for (const row of papersRaw) {
+    const conf = normalizeConf(row.conference ?? row.Conference);
+    if (!conf) continue;
+    
+    const cont = normalizeCont(row.predominant_continent ?? row['Predominant Continent'] ?? row.continent ?? '');
+    if (!papersByConf.has(conf)) papersByConf.set(conf, new Map());
+    const contMap = papersByConf.get(conf)!;
+    contMap.set(cont, (contMap.get(cont) ?? 0) + 1);
+  }
+
+  const committeeByConf = new Map<string, Map<string, number>>();
+  for (const row of committeeRaw) {
+    const conf = normalizeConf(row.conference ?? row.Conference);
+    if (!conf) continue;
+    
+    const cont = normalizeCont(row.continent ?? row.Continent ?? '');
+    if (!committeeByConf.has(conf)) committeeByConf.set(conf, new Map());
+    const contMap = committeeByConf.get(conf)!;
+    contMap.set(cont, (contMap.get(cont) ?? 0) + 1);
+  }
+
+  const allConfs = new Set([
+    ...knownConferences,
+    ...papersByConf.keys(),
+    ...committeeByConf.keys()
+  ]);
+  const result: DiversityData[] = [];
+
+  for (const conf of allConfs) {
+    const papersCounts = papersByConf.get(conf) ?? new Map();
+    const committeeCounts = committeeByConf.get(conf) ?? new Map();
+    
+    const papersDiversity = calculateGiniSimpson(papersCounts);
+    const committeeDiversity = calculateGiniSimpson(committeeCounts);
+    
+    result.push({
+      conference: conf,
+      committee: committeeDiversity,
+      papers: papersDiversity,
+    });
+  }
+
+  return result.sort((a, b) => a.conference.localeCompare(b.conference));
+}
