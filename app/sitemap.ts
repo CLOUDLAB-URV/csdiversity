@@ -19,6 +19,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
     },
     {
+      route: '/program-committee-distribution',
+      priority: 0.9,
+      changeFrequency: 'monthly',
+    },
+    {
       route: '/asian-trends',
       priority: 0.9,
       changeFrequency: 'monthly',

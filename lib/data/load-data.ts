@@ -52,6 +52,41 @@ export function processContinentDistribution(raw: any[]): ContinentDistributionI
   return Array.from(buckets.values()).sort((a, b) => a.year - b.year || a.conference.localeCompare(b.conference));
 }
 
+export function processCommitteeContinentDistribution(raw: any[]): ContinentDistributionItem[] {
+  const key = (v: any) => String(v ?? '').trim();
+  const normConf = (c: string) => key(c).toUpperCase();
+  const normCont = (c: string) => key(c).toUpperCase();
+  const buckets = new Map<string, ContinentDistributionItem>();
+
+  for (const row of raw) {
+    const conf = normConf(row.conference ?? row.Conference);
+    const yearVal = row.year ?? row.Year;
+    const year = Number(yearVal);
+    if (!conf || !Number.isFinite(year)) continue;
+
+    const contCode = normCont(row.continent ?? row.Continent ?? '');
+    const keyId = `${conf}:${year}`;
+    let cur = buckets.get(keyId);
+    if (!cur) {
+      cur = {
+        conference: conf,
+        year,
+        'North America': 0,
+        'Europe': 0,
+        'Asia': 0,
+        'Others': 0,
+      };
+      buckets.set(keyId, cur);
+    }
+    if (contCode === 'NA' || contCode === 'NORTH AMERICA' || contCode === 'NORTH_AMERICA' || contCode === 'AMERICA') cur['North America'] += 1;
+    else if (contCode === 'EU' || contCode === 'EUROPE') cur['Europe'] += 1;
+    else if (contCode === 'AS' || contCode === 'ASIA') cur['Asia'] += 1;
+    else cur['Others'] += 1;
+  }
+
+  return Array.from(buckets.values()).sort((a, b) => a.year - b.year || a.conference.localeCompare(b.conference));
+}
+
 export interface AsianTrendItem {
   conference: string;
   year: number;

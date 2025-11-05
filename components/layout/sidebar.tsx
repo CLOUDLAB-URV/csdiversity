@@ -13,11 +13,13 @@ import {
   Info,
   UserCheck,
   X,
+  UserCog,
 } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard, description: "Overview and statistics" },
-  { name: "Continent Distribution", href: "/continent-distribution", icon: Globe, description: "Geographic analysis" },
+  { name: "Accepted Papers", href: "/continent-distribution", icon: Globe, description: "Geographic distribution of papers" },
+  { name: "Program Committee", href: "/program-committee-distribution", icon: UserCog, description: "Committee geographic analysis" },
   { name: "Asian Trends", href: "/asian-trends", icon: TrendingUp, description: "Asian participation trends" },
   { name: "Big Tech vs Academia", href: "/big-tech-analysis", icon: Building2, description: "Industry vs academia" },
   { name: "Committee vs Papers", href: "/committee-analysis", icon: UserCheck, description: "Committee representation" },

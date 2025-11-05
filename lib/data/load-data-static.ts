@@ -1,7 +1,7 @@
 import path from 'path';
 import { promises as fs } from 'fs';
 import Papa from 'papaparse';
-import { processContinentDistribution, type ContinentDistributionItem } from './load-data';
+import { processContinentDistribution, processCommitteeContinentDistribution, type ContinentDistributionItem } from './load-data';
 
 const DATASET_TO_FILENAME: Record<string, string> = {
   papers: 'unifiedPaperData.csv',
@@ -34,5 +34,5 @@ export async function loadDatasetStatic(dataset: 'papers' | 'committee' | 'bigte
   }
 }
 
-export { processContinentDistribution, type ContinentDistributionItem };
+export { processContinentDistribution, processCommitteeContinentDistribution, type ContinentDistributionItem };
 

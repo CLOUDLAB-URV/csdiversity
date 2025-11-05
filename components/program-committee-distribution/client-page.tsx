@@ -40,13 +40,13 @@ const COLORS = {
   'Others': '#c5c5c5',
 };
 
-interface ClientContinentDistributionPageProps {
+interface ClientProgramCommitteeDistributionPageProps {
   initialData: ContinentDistributionItem[];
   conferences: string[];
   years: number[];
 }
 
-export function ClientContinentDistributionPage({ initialData, conferences, years }: ClientContinentDistributionPageProps) {
+export function ClientProgramCommitteeDistributionPage({ initialData, conferences, years }: ClientProgramCommitteeDistributionPageProps) {
   const [selectedYear, setSelectedYear] = useState<number | undefined>(undefined);
   const [selectedConferences, setSelectedConferences] = useState<string[]>([]);
   
@@ -142,10 +142,10 @@ export function ClientContinentDistributionPage({ initialData, conferences, year
     <div className="space-y-8">
       <div className="space-y-2">
         <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent dark:from-gray-100 dark:via-gray-200 dark:to-gray-300">
-          Accepted Papers Distribution
+          Program Committee Distribution
         </h1>
         <p className="text-lg text-muted-foreground">
-          Geographic distribution of accepted papers across different continents and conferences
+          Distribution of program committee members across different continents and conferences
         </p>
       </div>
 
@@ -164,7 +164,7 @@ export function ClientContinentDistributionPage({ initialData, conferences, year
         <div className="lg:col-span-3">
           <Card className="border-none shadow-xl">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-semibold">Accepted Papers by Continent</CardTitle>
+              <CardTitle className="text-xl font-semibold">Committee Members by Continent</CardTitle>
               <CardDescription>
                 {selectedConferences.length === 1 && !selectedYear
                   ? "Stacked bar chart showing distribution by year for the selected conference"
@@ -179,7 +179,7 @@ export function ClientContinentDistributionPage({ initialData, conferences, year
                     data={chartData}
                     margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
                     role="img"
-                    aria-label={`Continent distribution ${selectedConferences.length > 0 ? `for selected conferences` : selectedYear ? `for ${selectedYear}` : ''}`}
+                    aria-label={`Committee distribution ${selectedConferences.length > 0 ? `for selected conferences` : selectedYear ? `for ${selectedYear}` : ''}`}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.3} />
                     <XAxis 

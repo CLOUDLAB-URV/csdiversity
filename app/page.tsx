@@ -46,8 +46,8 @@ export const metadata: Metadata = {
 
 const navItems = [
   {
-    title: "Continent Distribution",
-    description: "View the distribution of papers across different continents",
+    title: "Accepted Papers Distribution",
+    description: "View the geographic distribution of accepted papers across different continents",
     href: "/continent-distribution",
     icon: Globe2,
     gradient: "from-blue-500 to-cyan-500",
