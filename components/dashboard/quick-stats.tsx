@@ -8,6 +8,10 @@ interface QuickStatsProps {
   numConfs: number;
 }
 
+const formatNumber = (num: number): string => {
+  return num.toLocaleString('en-US');
+};
+
 export const QuickStats = memo(function QuickStats({ totalPapers, yearRange, numConfs }: QuickStatsProps) {
 
   return (
@@ -23,7 +27,7 @@ export const QuickStats = memo(function QuickStats({ totalPapers, yearRange, num
           </div>
         </CardHeader>
         <CardContent className="relative">
-          <div className="text-3xl font-bold">{totalPapers.toLocaleString()}</div>
+          <div className="text-3xl font-bold">{formatNumber(totalPapers)}</div>
           <p className="text-xs text-muted-foreground mt-1">
             Across all conferences
           </p>

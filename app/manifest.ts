@@ -4,8 +4,8 @@ export default function manifest(): MetadataRoute.Manifest {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
   
   return {
-    name: 'Conference Data Visualizer',
-    short_name: 'Conference Viz',
+    name: 'CSdiversity',
+    short_name: 'CSdiversity',
     description: 'Visualize and analyze academic conference data from top-tier systems and networks conferences',
     start_url: '/',
     display: 'standalone',

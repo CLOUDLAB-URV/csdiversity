@@ -13,6 +13,10 @@ const COLORS = {
   'Others': '#c5c5c5',
 };
 
+const formatNumber = (num: number): string => {
+  return num.toLocaleString('en-US');
+};
+
 interface StatsGridProps {
   continentData: ContinentDistributionItem[];
   asianTrends: AsianTrendItem[];
@@ -20,7 +24,7 @@ interface StatsGridProps {
 }
 
 export const StatsGrid = memo(function StatsGrid({ continentData, asianTrends, bigTechData }: StatsGridProps) {
-  const { data, topContinent, asianGrowth, bigTechAvg } = useMemo(() => {
+  const { data, topContinent, asianGrowth, bigTechAvg, recentYearPapers, avgPapersPerYear } = useMemo(() => {
     const totals = { na: 0, eu: 0, asia: 0, other: 0 };
     for (const d of continentData) {
       totals.na += d['North America'];
@@ -56,8 +60,30 @@ export const StatsGrid = memo(function StatsGrid({ continentData, asianTrends, b
     const btAvg = bigTechData.length > 0 
       ? Number((bigTechData.reduce((s, d) => s + d.bigTech, 0) / bigTechData.length).toFixed(2))
       : null;
+
+    const papersByYear = new Map<number, number>();
+    for (const d of continentData) {
+      const year = d.year;
+      if (year) {
+        papersByYear.set(year, (papersByYear.get(year) || 0) + (d.total || 0));
+      }
+    }
     
-    return { data: rows, topContinent: top, asianGrowth: ag, bigTechAvg: btAvg };
+    const sortedYears = Array.from(papersByYear.keys()).sort((a, b) => b - a);
+    const lastYear = sortedYears[0];
+    const recentPapers = lastYear ? papersByYear.get(lastYear) || 0 : 0;
+    
+    const totalPapers = Array.from(papersByYear.values()).reduce((s, v) => s + v, 0);
+    const avgPerYear = papersByYear.size > 0 ? Number((totalPapers / papersByYear.size).toFixed(0)) : 0;
+    
+    return { 
+      data: rows, 
+      topContinent: top, 
+      asianGrowth: ag, 
+      bigTechAvg: btAvg,
+      recentYearPapers: { year: lastYear, count: recentPapers },
+      avgPapersPerYear: avgPerYear
+    };
   }, [continentData, asianTrends, bigTechData]);
 
   return (
@@ -98,19 +124,31 @@ export const StatsGrid = memo(function StatsGrid({ continentData, asianTrends, b
             </p>
           </CardContent>
         </Card>
+
+        <Card className="border-none shadow-lg bg-gradient-to-br from-orange-50 to-white dark:from-orange-950/20 dark:to-background">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-4xl font-bold tracking-tight bg-gradient-to-br from-orange-600 to-red-600 bg-clip-text text-transparent">{recentYearPapers.count > 0 ? formatNumber(recentYearPapers.count) : '—'}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {recentYearPapers.year ? `papers in ${recentYearPapers.year}` : '—'}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       <Card className="border-none shadow-xl">
         <CardHeader className="pb-4">
-          <CardTitle className="text-xl font-semibold">Distribution by Continent</CardTitle>
-          <CardDescription>Overall breakdown of academic papers across conferences</CardDescription>
+          <CardTitle className="text-xl font-semibold">Accepted Papers Distribution by Continent</CardTitle>
+          <CardDescription>Overall breakdown of accepted papers across conferences</CardDescription>
         </CardHeader>
         <CardContent>
           <ChartContainer config={{}} className="h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart 
                 role="img"
-                aria-label="Distribution by Continent pie chart showing percentage breakdown of academic papers across conferences"
+                aria-label="Accepted Papers Distribution by Continent pie chart showing percentage breakdown of accepted papers across conferences"
               >
                 <Pie
                   data={data}
@@ -118,11 +156,13 @@ export const StatsGrid = memo(function StatsGrid({ continentData, asianTrends, b
                   cy="50%"
                   labelLine={false}
                   label={({ name, value }) => `${name}: ${value}%`}
-                  outerRadius={100}
+                  outerRadius={120}
+                  innerRadius={40}
                   fill="#8884d8"
                   dataKey="value"
                   animationBegin={0}
                   animationDuration={800}
+                  paddingAngle={2}
                 >
                   {data.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[entry.name as keyof typeof COLORS]} />
@@ -130,11 +170,13 @@ export const StatsGrid = memo(function StatsGrid({ continentData, asianTrends, b
                 </Pie>
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.98)',
                     border: '1px solid #e5e7eb',
                     borderRadius: '8px',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                    padding: '12px'
                   }}
+                  formatter={(value: any) => `${Number(value).toFixed(2)}%`}
                 />
                 <Legend 
                   verticalAlign="bottom" 

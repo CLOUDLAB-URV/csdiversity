@@ -206,13 +206,25 @@ export function ClientAsianTrendsPage({ initialData }: ClientAsianTrendsPageProp
                 {numSeries > 1 && (
                   <div className="hidden md:flex p-0.5 rounded-lg border bg-white">
                     <button
-                      className={`px-3 py-1.5 text-sm rounded-md ${mode === 'aggregate' ? 'bg-gray-900 text-white' : 'text-gray-700'}`}
+                      className={`px-3 py-1.5 text-sm rounded-md transition-all ${
+                        mode === 'aggregate' 
+                          ? 'bg-gray-900 text-white shadow-md dark:bg-gray-700' 
+                          : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
                       onClick={() => handleModeChange('aggregate')}
-                    >Aggregate</button>
+                    >
+                      Aggregate
+                    </button>
                     <button
-                      className={`px-3 py-1.5 text-sm rounded-md ${mode === 'all' ? 'bg-gray-900 text-white' : 'text-gray-700'}`}
+                      className={`px-3 py-1.5 text-sm rounded-md transition-all ${
+                        mode === 'all' 
+                          ? 'bg-gray-900 text-white shadow-md dark:bg-gray-700' 
+                          : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
                       onClick={() => handleModeChange('all')}
-                    >All lines</button>
+                    >
+                      All lines
+                    </button>
                   </div>
                 )}
               </div>
@@ -228,14 +240,62 @@ export function ClientAsianTrendsPage({ initialData }: ClientAsianTrendsPageProp
                 />
                 <div className="flex flex-wrap gap-2 items-center">
                   <div className="flex gap-2">
-                    <button className="px-2.5 py-1 text-xs rounded-md border" onClick={() => handleTopNChange('all')} disabled={selectedConferences.length>0}>All</button>
-                    <button className="px-2.5 py-1 text-xs rounded-md border" onClick={() => handleTopNChange(3)} disabled={selectedConferences.length>0}>Top 3</button>
-                    <button className="px-2.5 py-1 text-xs rounded-md border" onClick={() => handleTopNChange(5)} disabled={selectedConferences.length>0}>Top 5</button>
+                    <button 
+                      className={`px-2.5 py-1 text-xs rounded-md border transition-all ${
+                        topN==='all'
+                          ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-700 dark:border-gray-700'
+                          : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      } ${selectedConferences.length>0 ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                      onClick={() => handleTopNChange('all')} 
+                      disabled={selectedConferences.length>0}
+                    >
+                      All
+                    </button>
+                    <button 
+                      className={`px-2.5 py-1 text-xs rounded-md border transition-all ${
+                        topN===3
+                          ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-700 dark:border-gray-700'
+                          : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      } ${selectedConferences.length>0 ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                      onClick={() => handleTopNChange(3)} 
+                      disabled={selectedConferences.length>0}
+                    >
+                      Top 3
+                    </button>
+                    <button 
+                      className={`px-2.5 py-1 text-xs rounded-md border transition-all ${
+                        topN===5
+                          ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-700 dark:border-gray-700'
+                          : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      } ${selectedConferences.length>0 ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                      onClick={() => handleTopNChange(5)} 
+                      disabled={selectedConferences.length>0}
+                    >
+                      Top 5
+                    </button>
                   </div>
                   {numSeries > 1 && (
                     <div className="flex gap-2 ml-auto md:hidden">
-                      <button className={`px-3 py-1.5 text-sm rounded-md ${mode==='aggregate'?'bg-gray-900 text-white':'border'}`} onClick={() => handleModeChange('aggregate')}>Aggregate</button>
-                      <button className={`px-3 py-1.5 text-sm rounded-md ${mode==='all'?'bg-gray-900 text-white':'border'}`} onClick={() => handleModeChange('all')}>All lines</button>
+                      <button 
+                        className={`px-3 py-1.5 text-sm rounded-md transition-all ${
+                          mode==='aggregate'
+                            ? 'bg-gray-900 text-white shadow-md dark:bg-gray-700'
+                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`} 
+                        onClick={() => handleModeChange('aggregate')}
+                      >
+                        Aggregate
+                      </button>
+                      <button 
+                        className={`px-3 py-1.5 text-sm rounded-md transition-all ${
+                          mode==='all'
+                            ? 'bg-gray-900 text-white shadow-md dark:bg-gray-700'
+                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`} 
+                        onClick={() => handleModeChange('all')}
+                      >
+                        All lines
+                      </button>
                     </div>
                   )}
                 </div>

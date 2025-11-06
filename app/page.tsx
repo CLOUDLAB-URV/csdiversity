@@ -10,7 +10,7 @@ const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
 export const metadata: Metadata = {
   title: "Dashboard",
-  description: "Comprehensive dashboard showing overview statistics and trends for academic conference data from systems and networks conferences including OSDI, ASPLOS, NSDI, SIGCOMM, EuroSys, and ATC. Explore continent distribution, Asian trends, Big Tech analysis, committee diversity, and more with interactive visualizations.",
+  description: "CSdiversity Dashboard: Comprehensive overview of academic conference statistics and trends. Explore continent distribution, Asian trends, Big Tech vs Academia analysis, committee diversity metrics, and research patterns across 13 top-tier systems and networks conferences (OSDI, ASPLOS, NSDI, SIGCOMM, EuroSys, ATC, SOCC, IEEECLOUD, CCGRID, EUROPAR, ICDCS, MIDDLEWARE, IC2E) with interactive visualizations from 2000-2024.",
   keywords: [
     "conference dashboard",
     "academic statistics",
@@ -19,13 +19,17 @@ export const metadata: Metadata = {
     "academic data visualization",
     "systems conferences",
     "networks conferences",
+    "conference analytics",
+    "research statistics",
+    "academic data dashboard",
+    "conference metrics dashboard",
   ],
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "Conference Data Dashboard | Academic Conference Analysis",
-    description: "Comprehensive dashboard showing overview statistics and trends for academic conference data from top-tier systems and networks conferences. Interactive visualizations and analytics.",
+    title: "CSdiversity Dashboard | Academic Conference Analysis & Statistics",
+    description: "Comprehensive dashboard with overview statistics and trends for academic conference data from 13 top-tier systems and networks conferences. Interactive visualizations, analytics, and research insights from 2000-2024.",
     url: baseUrl,
     type: "website",
     images: [
@@ -39,8 +43,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Conference Data Dashboard | Academic Conference Analysis",
-    description: "Comprehensive dashboard showing overview statistics and trends for academic conference data",
+    title: "CSdiversity Dashboard | Academic Conference Analysis",
+    description: "Comprehensive dashboard with overview statistics and trends for academic conference data from 13 top-tier systems and networks conferences",
   },
 };
 
@@ -90,14 +94,11 @@ const navItems = [
 ];
 
 export default async function Dashboard() {
-  const [papersRaw, bigtechRaw] = await Promise.all([
-    loadDatasetStatic('papers'),
-    loadDatasetStatic('bigtech'),
-  ]);
+  const papersRaw = await loadDatasetStatic('papers');
 
   const continentData = processContinentDistribution(papersRaw);
   const asianTrends = processAsianTrends(papersRaw);
-  const bigTechData = processBigTech(bigtechRaw);
+  const bigTechData = processBigTech(papersRaw);
 
   // Calculate QuickStats
   const totalPapers = papersRaw.length;
@@ -110,7 +111,7 @@ export default async function Dashboard() {
     <div className="space-y-8">
       <div className="space-y-2">
         <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent dark:from-gray-100 dark:via-gray-200 dark:to-gray-300">
-          Conference Data Dashboard
+          CSdiversity
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl">
           Comprehensive visualization and analysis of academic conference data from systems and networks conferences

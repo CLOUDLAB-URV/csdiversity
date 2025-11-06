@@ -1,4 +1,4 @@
-# Conference Data Visualizer
+# CSdiversity
 
 A web application for visualizing and analyzing academic conference data from top-tier systems and networks conferences (OSDI, ASPLOS, NSDI, SIGCOMM, EuroSys, ATC, and others).
 

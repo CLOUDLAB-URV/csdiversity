@@ -6,10 +6,9 @@ import { processContinentDistribution, processCommitteeContinentDistribution, ty
 const DATASET_TO_FILENAME: Record<string, string> = {
   papers: 'unifiedPaperData.csv',
   committee: 'unifiedCommitteeData.csv',
-  bigtech: 'big_companies_analysis_papers_new.csv',
 };
 
-export async function loadDatasetStatic(dataset: 'papers' | 'committee' | 'bigtech'): Promise<any[]> {
+export async function loadDatasetStatic(dataset: 'papers' | 'committee'): Promise<any[]> {
   const filename = DATASET_TO_FILENAME[dataset];
 
   if (!filename) {
@@ -32,7 +31,7 @@ export async function loadDatasetStatic(dataset: 'papers' | 'committee' | 'bigte
         e.type !== 'FieldMismatch' && e.code !== 'TooFewFields' && e.code !== 'TooManyFields'
       );
       if (criticalErrors.length > 0) {
-        console.warn(`CSV parse warnings (non-critical): ${JSON.stringify(parsed.errors.slice(0, 5))}`);
+        console.warn('CSV parse warnings:', parsed.errors.slice(0, 5));
       }
     }
 

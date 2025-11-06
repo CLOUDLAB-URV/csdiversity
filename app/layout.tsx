@@ -11,10 +11,10 @@ const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
 export const metadata: Metadata = {
   title: {
-    default: "Conference Data Visualizer | Academic Conference Analysis & Visualization",
-    template: "%s | Conference Data Visualizer",
+    default: "CSdiversity | Academic Conference Analysis & Visualization",
+    template: "%s | CSdiversity",
   },
-  description: "Visualize and analyze academic conference data from top-tier systems and networks conferences (OSDI, ASPLOS, NSDI, SIGCOMM, EuroSys, ATC). Track geographic distribution, Asian trends, diversity metrics, and Big Tech vs Academia contributions. Interactive dashboards with data from 2000-2024.",
+  description: "CSdiversity: Comprehensive academic conference data analysis and visualization platform. Explore geographic distribution, Asian trends, Big Tech vs Academia contributions, committee diversity, and research patterns across OSDI, ASPLOS, NSDI, SIGCOMM, EuroSys, ATC, SOCC, IEEECLOUD, CCGRID, EUROPAR, ICDCS, MIDDLEWARE, and IC2E. Interactive dashboards with data spanning 2000-2024.",
   keywords: [
     "academic conferences",
     "systems research",
@@ -36,10 +36,20 @@ export const metadata: Metadata = {
     "academic contributions",
     "research trends",
     "conference statistics",
+    "SOCC",
+    "IEEECLOUD",
+    "CCGRID",
+    "EUROPAR",
+    "ICDCS",
+    "MIDDLEWARE",
+    "IC2E",
+    "research diversity",
+    "academic collaboration",
+    "geographic research trends",
   ],
-  authors: [{ name: "Conference Data Visualizer" }],
-  creator: "Conference Data Visualizer",
-  publisher: "Conference Data Visualizer",
+  authors: [{ name: "CSdiversity" }],
+  creator: "CSdiversity",
+  publisher: "CSdiversity",
   metadataBase: new URL(baseUrl),
   alternates: {
     canonical: "/",
@@ -48,22 +58,22 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: baseUrl,
-    siteName: "Conference Data Visualizer",
-    title: "Conference Data Visualizer | Academic Conference Analysis & Visualization",
-    description: "Visualize and analyze academic conference data from top-tier systems and networks conferences. Track geographic distribution, trends, and diversity metrics across OSDI, ASPLOS, NSDI, SIGCOMM, EuroSys, and ATC.",
+    siteName: "CSdiversity",
+    title: "CSdiversity | Academic Conference Analysis & Visualization",
+    description: "CSdiversity: Comprehensive academic conference data analysis platform. Explore geographic distribution, Asian trends, Big Tech vs Academia contributions, committee diversity, and research patterns across 13 top-tier systems and networks conferences from 2000-2024.",
     images: [
       {
         url: `${baseUrl}/og-image.png`,
         width: 1200,
         height: 630,
-        alt: "Conference Data Visualizer - Academic Conference Analysis Dashboard",
+        alt: "CSdiversity - Academic Conference Analysis Dashboard",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Conference Data Visualizer | Academic Conference Analysis",
-    description: "Visualize and analyze academic conference data from top-tier systems and networks conferences. Track trends, diversity, and geographic distribution.",
+    title: "CSdiversity | Academic Conference Analysis",
+    description: "CSdiversity: Comprehensive academic conference data analysis platform. Explore geographic distribution, trends, diversity metrics, and Big Tech vs Academia contributions across 13 top-tier systems and networks conferences.",
     images: [`${baseUrl}/og-image.png`],
     creator: "@conferenceviz",
   },
@@ -85,7 +95,7 @@ export const metadata: Metadata = {
   },
   category: "Education",
   classification: "Academic Research Tool",
-  applicationName: "Conference Data Visualizer",
+  applicationName: "CSdiversity",
   referrer: "origin-when-cross-origin",
   formatDetection: {
     email: false,
@@ -106,7 +116,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Conference Viz',
+    title: 'CSdiversity',
   },
 };
 

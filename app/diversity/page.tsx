@@ -7,7 +7,7 @@ const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
 export const metadata: Metadata = {
   title: "Diversity Metrics",
-  description: "Explore diversity indices (Gini-Simpson Index) across conferences and committees in systems and networks conferences. Analyze geographic diversity and representation patterns. Measure diversity from 0 (homogeneous) to 1 (highly diverse) across OSDI, ASPLOS, NSDI, SIGCOMM, EuroSys, and ATC.",
+  description: "Diversity Metrics: Explore diversity indices (Gini-Simpson Index) across conferences and committees in 13 systems and networks conferences. Analyze geographic diversity and representation patterns. Measure diversity from 0 (homogeneous) to 1 (highly diverse) across OSDI, ASPLOS, NSDI, SIGCOMM, EuroSys, ATC, SOCC, IEEECLOUD, CCGRID, EUROPAR, ICDCS, MIDDLEWARE, and IC2E. Interactive radar charts and year range filtering.",
   keywords: [
     "diversity metrics",
     "Gini-Simpson Index",
@@ -17,6 +17,10 @@ export const metadata: Metadata = {
     "representation patterns",
     "diversity analysis",
     "academic diversity",
+    "Gini-Simpson diversity index",
+    "conference diversity metrics",
+    "geographic diversity analysis",
+    "diversity measurement",
   ],
   alternates: {
     canonical: "/diversity",
@@ -42,5 +46,5 @@ export default async function DiversityPage() {
 
   const diversityData = processDiversity(papersRaw, committeeRaw);
 
-  return <ClientDiversityPage initialData={diversityData} />;
+  return <ClientDiversityPage initialData={diversityData} papersRaw={papersRaw} committeeRaw={committeeRaw} />;
 }

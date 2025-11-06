@@ -1,4 +1,4 @@
-export async function fetchDataset(dataset: 'papers' | 'committee' | 'bigtech') {
+export async function fetchDataset(dataset: 'papers' | 'committee') {
   const res = await fetch(`/api/data/${dataset}`, { cache: 'no-store' });
   if (!res.ok) {
     const msg = await res.text().catch(() => '');
@@ -69,7 +69,16 @@ export function processContinentDistribution(raw: any[]): ContinentDistributionI
       };
       buckets.set(keyId, cur);
     }
-    cur[continent as keyof ContinentDistributionItem] = (cur[continent as keyof ContinentDistributionItem] as number) + 1;
+    const continentKey = continent as 'North America' | 'Europe' | 'Asia' | 'Others';
+    if (continentKey === 'North America') {
+      cur['North America'] = cur['North America'] + 1;
+    } else if (continentKey === 'Europe') {
+      cur['Europe'] = cur['Europe'] + 1;
+    } else if (continentKey === 'Asia') {
+      cur['Asia'] = cur['Asia'] + 1;
+    } else if (continentKey === 'Others') {
+      cur['Others'] = cur['Others'] + 1;
+    }
   }
 
   const result = Array.from(buckets.values());
@@ -112,7 +121,16 @@ export function processCommitteeContinentDistribution(raw: any[]): ContinentDist
       };
       buckets.set(keyId, cur);
     }
-    cur[continent as keyof ContinentDistributionItem] = (cur[continent as keyof ContinentDistributionItem] as number) + 1;
+    const continentKey = continent as 'North America' | 'Europe' | 'Asia' | 'Others';
+    if (continentKey === 'North America') {
+      cur['North America'] = cur['North America'] + 1;
+    } else if (continentKey === 'Europe') {
+      cur['Europe'] = cur['Europe'] + 1;
+    } else if (continentKey === 'Asia') {
+      cur['Asia'] = cur['Asia'] + 1;
+    } else if (continentKey === 'Others') {
+      cur['Others'] = cur['Others'] + 1;
+    }
   }
 
   const result = Array.from(buckets.values());
@@ -165,62 +183,306 @@ export interface BigTechItem {
   year: number;
   bigTech: number;
   academia: number;
+  unmapped: number;
 }
 
-export function processBigTech(raw: any[]): BigTechItem[] {
-  const byKey = new Map<string, { conference: string; year: number; bt: number; ac: number }>();
+export interface BigTechByRegionItem {
+  conference: string;
+  year: number;
+  bigTechNA: number;
+  bigTechAsia: number;
+  bigTechEU: number;
+  bigTechOthers: number;
+  academia: number;
+  unmapped: number;
+}
+
+const hasBigTechChina = (institutions: string): boolean => {
+  if (!institutions) return false;
+  const lower = institutions.toLowerCase();
+  const chinaPatterns = [
+    /\bhuawei\b/,
+    /\balibaba\b/,
+    /\balibaba\s+cloud\b/,
+    /\bbytedance\b/,
+    /\btencent\b/,
+    /\bbaidu\b/,
+    /\bsamsung\b/,
+    /\bxiaomi\b/,
+    /\btiktok\b/
+  ];
+  return chinaPatterns.some(pattern => pattern.test(lower));
+};
+
+const hasBigTechAmerica = (institutions: string): boolean => {
+  if (!institutions) return false;
+  const lower = institutions.toLowerCase();
+  const americaPatterns = [
+    /\bibm\b/,
+    /\bibm\s+research\b/,
+    /\bibm\s+linux\s+technology\s+center\b/,
+    /\bmicrosoft\b/,
+    /\bmicrosoft\s+azure\b/,
+    /\bazure\b/,
+    /\bmicrosoft\s+research\b/,
+    /\bgoogle\b/,
+    /\bgoogle\s+cloud\b/,
+    /\balphabet\b/,
+    /\bamazon\b/,
+    /\bamazon\s+web\s+services\b/,
+    /\baws\b/,
+    /\bfacebook\b/,
+    /\bmeta\b/,
+    /\bmeta\s+platforms\b/,
+    /\bapple\b/,
+    /\bintel\b/,
+    /\boracle\b/,
+    /\boracle\s+labs\b/,
+    /\bcisco\b/,
+    /\bcisco\s+systems\b/,
+    /\bhp\b/,
+    /\bhewlett\s+packard\b/,
+    /\bhp\s+labs\b/,
+    /\bhpe\b/,
+    /\bhewlett\s+packard\s+enterprise\b/,
+    /\bnvidia\b/,
+    /\bvmware\b/,
+    /\bnetflix\b/,
+    /\buber\b/,
+    /\btwitter\b/,
+    /\byahoo\b/,
+    /\bsnap\b/,
+    /\bsalesforce\b/,
+    /\bamd\b/,
+    /\badvanced\s+micro\s+devices\b/,
+    /\bqualcomm\b/,
+    /\bbroadcom\b/
+  ];
+  return americaPatterns.some(pattern => pattern.test(lower));
+};
+
+const hasBigTechEurope = (institutions: string): boolean => {
+  if (!institutions) return false;
+  const lower = institutions.toLowerCase();
+  const europePatterns = [
+    /\barm\b/,
+    /\barm\s+ltd\b/,
+    /\barm\s+limited\b/,
+    /\barm\s+holdings\b/,
+    /\bericsson\b/,
+    /\bnokia\b/,
+    /\bsiemens\b/,
+    /\borange\b/,
+    /\batos\b/,
+    /\bdeutsche\s+telekom\b/,
+    /\bbosch\b/,
+    /\bairbus\b/,
+    /\bsap\b/,
+    /\btelefonica\b/,
+    /\btelefónica\b/,
+    /\bvodafone\b/,
+    /\bthales\b/,
+    /\bphilips\b/
+  ];
+  return europePatterns.some(pattern => pattern.test(lower));
+};
+
+export function processBigTech(papersRaw: any[]): BigTechItem[] {
+  if (!papersRaw || papersRaw.length === 0) {
+    return [];
+  }
   
-  for (const r of raw) {
-    const conference = normalizeConferenceName(r.conference ?? r.Conference ?? '');
-    const year = Number(r.year ?? r.Year);
-    if (!conference || !Number.isFinite(year)) continue;
-    const k = `${conference}:${year}`;
+  const statsByKey = new Map<string, {
+    conference: string;
+    year: number;
+    total: number;
+    withInstitutions: number;
+    bigTechTotal: number;
+    academiaTotal: number;
+  }>();
+  
+  for (const row of papersRaw) {
+    const conf = normalizeConferenceName(row.conference ?? row.Conference);
+    const yearVal = row.year ?? row.Year;
+    const year = Number(yearVal);
+    if (!conf || !Number.isFinite(year)) continue;
     
-    if (r.level_2 && (r['0'] !== undefined)) {
-      const cat = String(r.level_2).toLowerCase();
-      const val = Number(r['0']);
-      
-      if (!byKey.has(k)) {
-        byKey.set(k, { conference, year, bt: 0, ac: 0 });
-      }
-      const bucket = byKey.get(k)!;
-      
-      if (cat === 'pct_has_big') {
-        bucket.bt = val;
-      } else if (cat === 'pct_no_big') {
-        bucket.ac = val;
-      }
+    const keyId = `${conf}:${year}`;
+    let stats = statsByKey.get(keyId);
+    if (!stats) {
+      stats = {
+        conference: conf,
+        year,
+        total: 0,
+        withInstitutions: 0,
+        bigTechTotal: 0,
+        academiaTotal: 0
+      };
+      statsByKey.set(keyId, stats);
+    }
+    
+    stats.total += 1;
+    
+    const institutions = String(row.institutions ?? row.Institutions ?? '').trim();
+    if (!institutions) {
+      continue;
+    }
+    
+    stats.withInstitutions += 1;
+    
+    const hasChina = hasBigTechChina(institutions);
+    const hasAmerica = hasBigTechAmerica(institutions);
+    const hasEurope = hasBigTechEurope(institutions);
+    
+    if (hasChina || hasAmerica || hasEurope) {
+      stats.bigTechTotal += 1;
     } else {
-      if (!byKey.has(k)) {
-        byKey.set(k, { conference, year, bt: 0, ac: 0 });
-      }
-      const bucket = byKey.get(k)!;
-      bucket.bt += Number(r.has_big_tech ?? r.big_tech_count ?? r.bigtech ?? 0);
-      bucket.ac += Number(r.academic_count ?? r.academia ?? 0);
+      stats.academiaTotal += 1;
     }
   }
   
   const rows: BigTechItem[] = [];
-  byKey.forEach(({ conference, year, bt, ac }) => {
-    let pBT = Number(bt.toFixed(2));
-    let pAC = Number(ac.toFixed(2));
+  
+  for (const stats of statsByKey.values()) {
+    const pBT = stats.total > 0 ? Number(((stats.bigTechTotal / stats.total) * 100).toFixed(2)) : 0;
+    const pAC = stats.total > 0 ? Number(((stats.academiaTotal / stats.total) * 100).toFixed(2)) : 0;
+    const pUnmapped = stats.total > 0 ? Number((((stats.total - stats.withInstitutions) / stats.total) * 100).toFixed(2)) : 0;
     
-    const total = pBT + pAC;
-    if (Math.abs(total - 100) > 0.1 && total > 0) {
-      pBT = Number(((pBT / total) * 100).toFixed(2));
-      pAC = Number((100 - pBT).toFixed(2));
-    } else if (total === 0) {
-      pBT = 0;
-      pAC = 0;
+    rows.push({
+      conference: stats.conference,
+      year: stats.year,
+      bigTech: Math.max(0, Math.min(100, pBT)),
+      academia: Math.max(0, Math.min(100, pAC)),
+      unmapped: Math.max(0, Math.min(100, pUnmapped))
+    });
+  }
+  
+  return rows.sort((a, b) => a.year - b.year || a.conference.localeCompare(b.conference));
+}
+
+export function processBigTechByRegion(raw: any[], papersRaw?: any[]): BigTechByRegionItem[] {
+  if (!papersRaw || papersRaw.length === 0) {
+    return [];
+  }
+  
+  const statsByKey = new Map<string, {
+    conference: string;
+    year: number;
+    total: number;
+    withInstitutions: number;
+    bigTechTotal: number;
+    academiaTotal: number;
+    bigTechNA: number;
+    bigTechAsia: number;
+    bigTechEU: number;
+    bigTechOthers: number;
+  }>();
+  
+  for (const row of papersRaw) {
+    const conf = normalizeConferenceName(row.conference ?? row.Conference);
+    const yearVal = row.year ?? row.Year;
+    const year = Number(yearVal);
+    if (!conf || !Number.isFinite(year)) continue;
+    
+    const keyId = `${conf}:${year}`;
+    let stats = statsByKey.get(keyId);
+    if (!stats) {
+      stats = {
+        conference: conf,
+        year,
+        total: 0,
+        withInstitutions: 0,
+        bigTechTotal: 0,
+        academiaTotal: 0,
+        bigTechNA: 0,
+        bigTechAsia: 0,
+        bigTechEU: 0,
+        bigTechOthers: 0
+      };
+      statsByKey.set(keyId, stats);
     }
     
-    rows.push({ 
-      conference, 
-      year, 
-      bigTech: Math.max(0, Math.min(100, pBT)), 
-      academia: Math.max(0, Math.min(100, pAC)) 
+    stats.total += 1;
+    
+    const institutions = String(row.institutions ?? row.Institutions ?? '').trim();
+    if (!institutions) {
+      continue;
+    }
+    
+    stats.withInstitutions += 1;
+    
+    const hasChina = hasBigTechChina(institutions);
+    const hasAmerica = hasBigTechAmerica(institutions);
+    const hasEurope = hasBigTechEurope(institutions);
+    
+    if (hasChina || hasAmerica || hasEurope) {
+      stats.bigTechTotal += 1;
+      
+      const regions = [];
+      if (hasChina) regions.push('asia');
+      if (hasAmerica) regions.push('na');
+      if (hasEurope) regions.push('eu');
+      
+      const weight = 1 / regions.length;
+      
+      if (regions.includes('asia')) stats.bigTechAsia += weight;
+      if (regions.includes('na')) stats.bigTechNA += weight;
+      if (regions.includes('eu')) stats.bigTechEU += weight;
+    } else {
+      stats.academiaTotal += 1;
+    }
+  }
+  
+  const rows: BigTechByRegionItem[] = [];
+  
+  for (const stats of statsByKey.values()) {
+    const pBT = stats.total > 0 ? Number(((stats.bigTechTotal / stats.total) * 100).toFixed(2)) : 0;
+    const pAC = stats.total > 0 ? Number(((stats.academiaTotal / stats.total) * 100).toFixed(2)) : 0;
+    
+    const pUnmapped = stats.total > 0 ? Number((((stats.total - stats.withInstitutions) / stats.total) * 100).toFixed(2)) : 0;
+    
+    let bigTechNA = 0;
+    let bigTechAsia = 0;
+    let bigTechEU = 0;
+    let bigTechOthers = 0;
+    
+    if (stats.bigTechTotal > 0) {
+      const pNA = stats.bigTechNA / stats.bigTechTotal;
+      const pAsia = stats.bigTechAsia / stats.bigTechTotal;
+      const pEU = stats.bigTechEU / stats.bigTechTotal;
+      const pOther = stats.bigTechOthers / stats.bigTechTotal;
+      
+      bigTechNA = Number((pBT * pNA).toFixed(2));
+      bigTechAsia = Number((pBT * pAsia).toFixed(2));
+      bigTechEU = Number((pBT * pEU).toFixed(2));
+      bigTechOthers = Number((pBT * pOther).toFixed(2));
+      
+      const sum = bigTechNA + bigTechAsia + bigTechEU + bigTechOthers;
+      const diff = Number((pBT - sum).toFixed(2));
+      if (Math.abs(diff) > 0.01) {
+        if (bigTechOthers > 0) {
+          bigTechOthers = Number((bigTechOthers + diff).toFixed(2));
+        } else if (bigTechEU > 0) {
+          bigTechEU = Number((bigTechEU + diff).toFixed(2));
+        } else if (bigTechAsia > 0) {
+          bigTechAsia = Number((bigTechAsia + diff).toFixed(2));
+        } else {
+          bigTechNA = Number((bigTechNA + diff).toFixed(2));
+        }
+      }
+    }
+    
+    rows.push({
+      conference: stats.conference,
+      year: stats.year,
+      bigTechNA: Math.max(0, Math.min(100, bigTechNA)),
+      bigTechAsia: Math.max(0, Math.min(100, bigTechAsia)),
+      bigTechEU: Math.max(0, Math.min(100, bigTechEU)),
+      bigTechOthers: Math.max(0, Math.min(100, bigTechOthers)),
+      academia: Math.max(0, Math.min(100, pAC)),
+      unmapped: Math.max(0, Math.min(100, pUnmapped))
     });
-  });
+  }
   
   return rows.sort((a, b) => a.year - b.year || a.conference.localeCompare(b.conference));
 }

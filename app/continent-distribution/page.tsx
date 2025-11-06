@@ -6,7 +6,7 @@ const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
 export const metadata: Metadata = {
   title: "Accepted Papers Distribution",
-  description: "Analyze the geographic distribution of accepted papers across different continents (North America, Europe, Asia, Others) in systems and networks conferences. Filter by conference (OSDI, ASPLOS, NSDI, SIGCOMM, EuroSys, ATC) and year to explore trends from 2000-2024.",
+  description: "Accepted Papers Distribution: Analyze geographic distribution of accepted papers across continents (North America, Europe, Asia, Others) in 13 systems and networks conferences. Filter by conference (OSDI, ASPLOS, NSDI, SIGCOMM, EuroSys, ATC, SOCC, IEEECLOUD, CCGRID, EUROPAR, ICDCS, MIDDLEWARE, IC2E) and year to explore trends from 2000-2024. Interactive bar charts and visualizations.",
   keywords: [
     "geographic distribution",
     "continent distribution",
@@ -16,6 +16,10 @@ export const metadata: Metadata = {
     "Asian research",
     "conference geography",
     "geographic trends",
+    "accepted papers by region",
+    "paper distribution analysis",
+    "continental research distribution",
+    "geographic paper trends",
   ],
   alternates: {
     canonical: "/continent-distribution",

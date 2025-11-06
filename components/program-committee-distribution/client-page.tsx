@@ -38,6 +38,7 @@ const COLORS = {
   'Europe': '#1681c5',
   'Asia': '#7d7d7d',
   'Others': '#c5c5c5',
+  'Unmapped': 'transparent',
 };
 
 interface ClientProgramCommitteeDistributionPageProps {
@@ -88,16 +89,20 @@ export function ClientProgramCommitteeDistributionPage({ initialData, conference
       const rows = Array.from(grouped.entries())
         .map(([year, v]) => {
           const total = v.total || 1;
+          const mapped = v.na + v.eu + v.asia + v.other;
+          const unmapped = total - mapped;
           const pNA = Number(((v.na / total) * 100).toFixed(2));
           const pEU = Number(((v.eu / total) * 100).toFixed(2));
           const pAS = Number(((v.asia / total) * 100).toFixed(2));
           const pOT = Number(((v.other / total) * 100).toFixed(2));
+          const pUnmapped = Number(((unmapped / total) * 100).toFixed(2));
           return {
             conference: String(year),
             'North America': pNA,
             'Europe': pEU,
             'Asia': pAS,
             'Others': pOT,
+            'Unmapped': pUnmapped,
           };
         })
         .sort((a, b) => Number(a.conference) - Number(b.conference));
@@ -115,16 +120,20 @@ export function ClientProgramCommitteeDistributionPage({ initialData, conference
       });
       const rows = Array.from(grouped.entries()).map(([conf, v]) => {
         const total = v.total || 1;
+        const mapped = v.na + v.eu + v.asia + v.other;
+        const unmapped = total - mapped;
         const pNA = Number(((v.na / total) * 100).toFixed(2));
         const pEU = Number(((v.eu / total) * 100).toFixed(2));
         const pAS = Number(((v.asia / total) * 100).toFixed(2));
         const pOT = Number(((v.other / total) * 100).toFixed(2));
+        const pUnmapped = Number(((unmapped / total) * 100).toFixed(2));
         return {
           conference: conf,
           'North America': pNA,
           'Europe': pEU,
           'Asia': pAS,
           'Others': pOT,
+          'Unmapped': pUnmapped,
         };
       });
       rows.sort((a, b) => b['North America'] - a['North America']);
@@ -206,11 +215,47 @@ export function ClientProgramCommitteeDistributionPage({ initialData, conference
                     <Legend 
                       iconType="rect"
                       wrapperStyle={{ paddingTop: '20px', fontSize: '12px' }}
+                      payload={[
+                        { value: 'North America', type: 'rect', color: COLORS['North America'] },
+                        { value: 'Europe', type: 'rect', color: COLORS['Europe'] },
+                        { value: 'Asia', type: 'rect', color: COLORS['Asia'] },
+                        { value: 'Others', type: 'rect', color: COLORS['Others'] },
+                        { value: 'Unmapped', type: 'rect', color: 'transparent' },
+                      ]}
+                      content={({ payload }) => (
+                        <ul className="flex flex-wrap justify-center gap-4">
+                          {payload?.map((entry: any, index: number) => (
+                            <li key={index} className="flex items-center gap-2">
+                              {entry.value === 'Unmapped' ? (
+                                <svg width="14" height="14" className="inline-block">
+                                  <rect
+                                    x="1"
+                                    y="1"
+                                    width="12"
+                                    height="12"
+                                    fill="transparent"
+                                    stroke="#9ca3af"
+                                    strokeWidth="1"
+                                    strokeDasharray="3 3"
+                                  />
+                                </svg>
+                              ) : (
+                                <span
+                                  className="inline-block w-3.5 h-3.5 rounded-sm"
+                                  style={{ backgroundColor: entry.color }}
+                                />
+                              )}
+                              <span>{entry.value}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     />
                     <Bar dataKey="North America" stackId="a" fill={COLORS['North America']} radius={[0, 0, 0, 0]} />
                     <Bar dataKey="Europe" stackId="a" fill={COLORS['Europe']} radius={[0, 0, 0, 0]} />
                     <Bar dataKey="Asia" stackId="a" fill={COLORS['Asia']} radius={[0, 0, 0, 0]} />
-                    <Bar dataKey="Others" stackId="a" fill={COLORS['Others']} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Others" stackId="a" fill={COLORS['Others']} radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="Unmapped" stackId="a" fill={COLORS['Unmapped']} radius={[4, 4, 0, 0]} hide={true} />
                   </BarChart>
                 </ResponsiveContainer>
                 </Suspense>

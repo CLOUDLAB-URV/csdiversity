@@ -3,7 +3,7 @@
 import { useMemo, useState, useCallback, Suspense } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FilterPanel } from "@/components/filters/filter-panel";
-import type { BigTechItem } from "@/lib/data/load-data";
+import type { BigTechItem, BigTechByRegionItem } from "@/lib/data/load-data";
 import { ChartContainer } from "@/components/charts/chart-container";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, Brush, ComposedChart, Area } from "recharts";
 
@@ -35,9 +35,10 @@ const ChartSkeleton = () => (
 
 interface ClientBigTechAnalysisPageProps {
   initialData: BigTechItem[];
+  initialDataByRegion: BigTechByRegionItem[];
 }
 
-export function ClientBigTechAnalysisPage({ initialData }: ClientBigTechAnalysisPageProps) {
+export function ClientBigTechAnalysisPage({ initialData, initialDataByRegion }: ClientBigTechAnalysisPageProps) {
   const [selectedYear, setSelectedYear] = useState<number | undefined>(undefined);
   const [topN, setTopN] = useState<number | 'all'>('all');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
@@ -83,28 +84,194 @@ export function ClientBigTechAnalysisPage({ initialData }: ClientBigTechAnalysis
     }
     return data;
   }, [initialData, selectedYear, selectedConferences]);
+
+  const filteredDataByRegion = useMemo(() => {
+    let data = initialDataByRegion;
+    if (selectedConferences.length > 0) {
+      data = data.filter(d => selectedConferences.includes(d.conference));
+    }
+    if (selectedYear) {
+      data = data.filter(d => d.year === selectedYear);
+    }
+    return data;
+  }, [initialDataByRegion, selectedYear, selectedConferences]);
   
   const chartData = useMemo(() => {
-    const grouped = new Map<string, { conference: string; btValues: number[]; acValues: number[] }>();
-    filteredData.forEach(d => {
-      const key = d.conference;
-      const item = grouped.get(key) || { conference: key, btValues: [], acValues: [] };
-      item.btValues.push(d.bigTech);
-      item.acValues.push(d.academia);
-      grouped.set(key, item);
-    });
-    let rows = Array.from(grouped.values()).map(({ conference, btValues, acValues }) => {
-      const btAvg = btValues.length > 0 ? btValues.reduce((s, v) => s + v, 0) / btValues.length : 0;
-      const acAvg = acValues.length > 0 ? acValues.reduce((s, v) => s + v, 0) / acValues.length : 0;
-      const total = btAvg + acAvg || 1;
-      const pBT = Number(((btAvg / total) * 100).toFixed(2));
-      const pAC = Math.max(0, Math.min(100, Number((100 - pBT).toFixed(2))));
-      return { conference, 'Big Tech': pBT, 'Academia': pAC };
-    });
-    rows.sort((a, b) => sortOrder === 'desc' ? (b['Big Tech'] - a['Big Tech']) : (a['Big Tech'] - b['Big Tech']));
-    if (topN !== 'all') rows = rows.slice(0, topN);
-    return rows;
-  }, [filteredData, sortOrder, topN]);
+    const isSingleConference = selectedConferences.length === 1 && !selectedYear;
+    
+    if (isSingleConference) {
+      const grouped = new Map<number, { year: number; btValues: number[]; acValues: number[] }>();
+      filteredData.forEach(d => {
+        const key = d.year;
+        const item = grouped.get(key) || { year: key, btValues: [], acValues: [] };
+        item.btValues.push(d.bigTech);
+        item.acValues.push(d.academia);
+        grouped.set(key, item);
+      });
+      let rows = Array.from(grouped.values()).map(({ year, btValues, acValues }) => {
+        const btAvg = btValues.length > 0 ? btValues.reduce((s, v) => s + v, 0) / btValues.length : 0;
+        const acAvg = acValues.length > 0 ? acValues.reduce((s, v) => s + v, 0) / acValues.length : 0;
+        const unmappedAvg = filteredData.filter(d => d.year === year).length > 0 
+          ? filteredData.filter(d => d.year === year).reduce((s, d) => s + (d.unmapped || 0), 0) / filteredData.filter(d => d.year === year).length 
+          : 0;
+        const pBT = Number(btAvg.toFixed(2));
+        const pAC = Number(acAvg.toFixed(2));
+        const pUnmapped = Number(unmappedAvg.toFixed(2));
+        return { conference: String(year), 'Big Tech': pBT, 'Academia': pAC, 'Unmapped': pUnmapped };
+      });
+      rows.sort((a, b) => Number(a.conference) - Number(b.conference));
+      return rows;
+    } else {
+      const grouped = new Map<string, { conference: string; btValues: number[]; acValues: number[] }>();
+      filteredData.forEach(d => {
+        const key = d.conference;
+        const item = grouped.get(key) || { conference: key, btValues: [], acValues: [] };
+        item.btValues.push(d.bigTech);
+        item.acValues.push(d.academia);
+        grouped.set(key, item);
+      });
+      let rows = Array.from(grouped.values()).map(({ conference, btValues, acValues }) => {
+        const btAvg = btValues.length > 0 ? btValues.reduce((s, v) => s + v, 0) / btValues.length : 0;
+        const acAvg = acValues.length > 0 ? acValues.reduce((s, v) => s + v, 0) / acValues.length : 0;
+        const unmappedAvg = filteredData.filter(d => d.conference === conference).length > 0
+          ? filteredData.filter(d => d.conference === conference).reduce((s, d) => s + (d.unmapped || 0), 0) / filteredData.filter(d => d.conference === conference).length
+          : 0;
+        const pBT = Number(btAvg.toFixed(2));
+        const pAC = Number(acAvg.toFixed(2));
+        const pUnmapped = Number(unmappedAvg.toFixed(2));
+        return { conference, 'Big Tech': pBT, 'Academia': pAC, 'Unmapped': pUnmapped };
+      });
+      rows.sort((a, b) => sortOrder === 'desc' ? (b['Big Tech'] - a['Big Tech']) : (a['Big Tech'] - b['Big Tech']));
+      if (topN !== 'all') rows = rows.slice(0, topN);
+      return rows;
+    }
+  }, [filteredData, sortOrder, topN, selectedConferences, selectedYear]);
+
+  const chartDataByRegion = useMemo(() => {
+    const isSingleConference = selectedConferences.length === 1 && !selectedYear;
+    
+    if (isSingleConference) {
+      const grouped = new Map<number, { 
+        year: number; 
+        naValues: number[]; 
+        asiaValues: number[]; 
+        euValues: number[]; 
+        othersValues: number[]; 
+        acValues: number[] 
+      }>();
+      filteredDataByRegion.forEach(d => {
+        const key = d.year;
+        const item = grouped.get(key) || { 
+          year: key, 
+          naValues: [], 
+          asiaValues: [], 
+          euValues: [], 
+          othersValues: [], 
+          acValues: [] 
+        };
+        item.naValues.push(d.bigTechNA);
+        item.asiaValues.push(d.bigTechAsia);
+        item.euValues.push(d.bigTechEU);
+        item.othersValues.push(d.bigTechOthers);
+        item.acValues.push(d.academia);
+        grouped.set(key, item);
+      });
+      let rows = Array.from(grouped.values()).map(({ year, naValues, asiaValues, euValues, othersValues, acValues }) => {
+        const yearData = filteredDataByRegion.filter(d => d.year === year);
+        if (yearData.length === 0) {
+          return {
+            conference: String(year),
+            'Big Tech (NA)': 0,
+            'Big Tech (Asia)': 0,
+            'Big Tech (EU)': 0,
+            'Big Tech (Others)': 0,
+            'Academia': 0,
+            'Unmapped': 0
+          };
+        }
+        
+        const pNA = Number((yearData.reduce((s, d) => s + d.bigTechNA, 0) / yearData.length).toFixed(2));
+        const pAsia = Number((yearData.reduce((s, d) => s + d.bigTechAsia, 0) / yearData.length).toFixed(2));
+        const pEU = Number((yearData.reduce((s, d) => s + d.bigTechEU, 0) / yearData.length).toFixed(2));
+        const pOthers = Number((yearData.reduce((s, d) => s + d.bigTechOthers, 0) / yearData.length).toFixed(2));
+        const pAC = Number((yearData.reduce((s, d) => s + d.academia, 0) / yearData.length).toFixed(2));
+        const pUnmapped = Number((yearData.reduce((s, d) => s + (d.unmapped || 0), 0) / yearData.length).toFixed(2));
+        
+        return { 
+          conference: String(year), 
+          'Big Tech (NA)': pNA, 
+          'Big Tech (Asia)': pAsia, 
+          'Big Tech (EU)': pEU, 
+          'Big Tech (Others)': pOthers, 
+          'Academia': pAC,
+          'Unmapped': pUnmapped
+        };
+      });
+      rows.sort((a, b) => Number(a.conference) - Number(b.conference));
+      return rows;
+    } else {
+      const grouped = new Map<string, { 
+        conference: string; 
+        naValues: number[]; 
+        asiaValues: number[]; 
+        euValues: number[]; 
+        othersValues: number[]; 
+        acValues: number[] 
+      }>();
+      filteredDataByRegion.forEach(d => {
+        const key = d.conference;
+        const item = grouped.get(key) || { 
+          conference: key, 
+          naValues: [], 
+          asiaValues: [], 
+          euValues: [], 
+          othersValues: [], 
+          acValues: [] 
+        };
+        item.naValues.push(d.bigTechNA);
+        item.asiaValues.push(d.bigTechAsia);
+        item.euValues.push(d.bigTechEU);
+        item.othersValues.push(d.bigTechOthers);
+        item.acValues.push(d.academia);
+        grouped.set(key, item);
+      });
+      let rows = Array.from(grouped.values()).map(({ conference, naValues, asiaValues, euValues, othersValues, acValues }) => {
+        const confData = filteredDataByRegion.filter(d => d.conference === conference);
+        if (confData.length === 0) {
+          return {
+            conference,
+            'Big Tech (NA)': 0,
+            'Big Tech (Asia)': 0,
+            'Big Tech (EU)': 0,
+            'Big Tech (Others)': 0,
+            'Academia': 0,
+            'Unmapped': 0
+          };
+        }
+        
+        const pNA = Number((confData.reduce((s, d) => s + d.bigTechNA, 0) / confData.length).toFixed(2));
+        const pAsia = Number((confData.reduce((s, d) => s + d.bigTechAsia, 0) / confData.length).toFixed(2));
+        const pEU = Number((confData.reduce((s, d) => s + d.bigTechEU, 0) / confData.length).toFixed(2));
+        const pOthers = Number((confData.reduce((s, d) => s + d.bigTechOthers, 0) / confData.length).toFixed(2));
+        const pAC = Number((confData.reduce((s, d) => s + d.academia, 0) / confData.length).toFixed(2));
+        const pUnmapped = Number((confData.reduce((s, d) => s + (d.unmapped || 0), 0) / confData.length).toFixed(2));
+        
+        return { 
+          conference, 
+          'Big Tech (NA)': pNA, 
+          'Big Tech (Asia)': pAsia, 
+          'Big Tech (EU)': pEU, 
+          'Big Tech (Others)': pOthers, 
+          'Academia': pAC,
+          'Unmapped': pUnmapped
+        };
+      });
+      const totalBigTech = (row: any) => row['Big Tech (NA)'] + row['Big Tech (Asia)'] + row['Big Tech (EU)'] + row['Big Tech (Others)'];
+      rows.sort((a, b) => sortOrder === 'desc' ? (totalBigTech(b) - totalBigTech(a)) : (totalBigTech(a) - totalBigTech(b)));
+      if (topN !== 'all') rows = rows.slice(0, topN);
+      return rows;
+    }
+  }, [filteredDataByRegion, sortOrder, topN, selectedConferences, selectedYear]);
 
   const { evolutionData, evolutionConfs, aggregateEvolutionData } = useMemo(() => {
     const confs = selectedConferences.length > 0 
@@ -160,21 +327,23 @@ export function ClientBigTechAnalysisPage({ initialData }: ClientBigTechAnalysis
   ];
 
   const trendData = useMemo(() => {
-    const byYear = new Map<number, { btValues: number[]; acValues: number[] }>();
+    const byYear = new Map<number, { btValues: number[]; acValues: number[]; unmappedValues: number[] }>();
     filteredData.forEach(d => {
-      const agg = byYear.get(d.year) || { btValues: [], acValues: [] };
+      const agg = byYear.get(d.year) || { btValues: [], acValues: [], unmappedValues: [] };
       agg.btValues.push(d.bigTech);
       agg.acValues.push(d.academia);
+      agg.unmappedValues.push(d.unmapped || 0);
       byYear.set(d.year, agg);
     });
     return Array.from(byYear.entries())
-      .map(([year, { btValues, acValues }]) => {
+      .map(([year, { btValues, acValues, unmappedValues }]) => {
         const btAvg = btValues.length > 0 ? btValues.reduce((s, v) => s + v, 0) / btValues.length : 0;
         const acAvg = acValues.length > 0 ? acValues.reduce((s, v) => s + v, 0) / acValues.length : 0;
-        const total = btAvg + acAvg || 1;
-        const pBT = Number(((btAvg / total) * 100).toFixed(2));
-        const pAC = Math.max(0, Math.min(100, Number((100 - pBT).toFixed(2))));
-        return { year, 'Big Tech': pBT, 'Academia': pAC };
+        const unmappedAvg = unmappedValues.length > 0 ? unmappedValues.reduce((s, v) => s + v, 0) / unmappedValues.length : 0;
+        const pBT = Number(btAvg.toFixed(2));
+        const pAC = Number(acAvg.toFixed(2));
+        const pUnmapped = Number(unmappedAvg.toFixed(2));
+        return { year, 'Big Tech': pBT, 'Academia': pAC, 'Unmapped': pUnmapped };
       })
       .sort((a, b) => a.year - b.year);
   }, [filteredData]);
@@ -230,14 +399,59 @@ export function ClientBigTechAnalysisPage({ initialData }: ClientBigTechAnalysis
           <div className="mt-4 space-y-2">
             <label className="text-sm font-medium">Order</label>
             <div className="flex gap-2">
-              <button className={`px-2.5 py-1 text-xs rounded-md border ${sortOrder==='desc'?'bg-gray-900 text-white border-gray-900':''}`} onClick={() => handleSortOrderChange('desc')}>Big Tech ↓</button>
-              <button className={`px-2.5 py-1 text-xs rounded-md border ${sortOrder==='asc'?'bg-gray-900 text-white border-gray-900':''}`} onClick={() => handleSortOrderChange('asc')}>Big Tech ↑</button>
+              <button 
+                className={`px-2.5 py-1 text-xs rounded-md border transition-all ${
+                  sortOrder==='desc'
+                    ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-700 dark:border-gray-700'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`} 
+                onClick={() => handleSortOrderChange('desc')}
+              >
+                Big Tech ↓
+              </button>
+              <button 
+                className={`px-2.5 py-1 text-xs rounded-md border transition-all ${
+                  sortOrder==='asc'
+                    ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-700 dark:border-gray-700'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`} 
+                onClick={() => handleSortOrderChange('asc')}
+              >
+                Big Tech ↑
+              </button>
             </div>
             <label className="text-sm font-medium">Show</label>
             <div className="flex gap-2">
-              <button className={`px-2.5 py-1 text-xs rounded-md border ${topN==='all'?'bg-gray-900 text-white border-gray-900':''}`} onClick={() => handleTopNChange('all')}>All</button>
-              <button className={`px-2.5 py-1 text-xs rounded-md border ${topN===5?'bg-gray-900 text-white border-gray-900':''}`} onClick={() => handleTopNChange(5)}>Top 5</button>
-              <button className={`px-2.5 py-1 text-xs rounded-md border ${topN===10?'bg-gray-900 text-white border-gray-900':''}`} onClick={() => handleTopNChange(10)}>Top 10</button>
+              <button 
+                className={`px-2.5 py-1 text-xs rounded-md border transition-all ${
+                  topN==='all'
+                    ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-700 dark:border-gray-700'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`} 
+                onClick={() => handleTopNChange('all')}
+              >
+                All
+              </button>
+              <button 
+                className={`px-2.5 py-1 text-xs rounded-md border transition-all ${
+                  topN===5
+                    ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-700 dark:border-gray-700'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`} 
+                onClick={() => handleTopNChange(5)}
+              >
+                Top 5
+              </button>
+              <button 
+                className={`px-2.5 py-1 text-xs rounded-md border transition-all ${
+                  topN===10
+                    ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-700 dark:border-gray-700'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`} 
+                onClick={() => handleTopNChange(10)}
+              >
+                Top 10
+              </button>
             </div>
           </div>
         </div>
@@ -300,9 +514,43 @@ export function ClientBigTechAnalysisPage({ initialData }: ClientBigTechAnalysis
                     />
                     <Legend 
                       wrapperStyle={{ fontSize: '12px' }}
+                      payload={[
+                        { value: 'Big Tech', type: 'rect', color: '#c5c5c5' },
+                        { value: 'Academia', type: 'rect', color: '#1f3b6f' },
+                        { value: 'Unmapped', type: 'rect', color: 'transparent' },
+                      ]}
+                      content={({ payload }) => (
+                        <ul className="flex flex-wrap justify-center gap-4">
+                          {payload?.map((entry: any, index: number) => (
+                            <li key={index} className="flex items-center gap-2">
+                              {entry.value === 'Unmapped' ? (
+                                <svg width="14" height="14" className="inline-block">
+                                  <rect
+                                    x="1"
+                                    y="1"
+                                    width="12"
+                                    height="12"
+                                    fill="transparent"
+                                    stroke="#9ca3af"
+                                    strokeWidth="1"
+                                    strokeDasharray="3 3"
+                                  />
+                                </svg>
+                              ) : (
+                                <span
+                                  className="inline-block w-3.5 h-3.5 rounded-sm"
+                                  style={{ backgroundColor: entry.color }}
+                                />
+                              )}
+                              <span>{entry.value}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     />
                     <Bar dataKey='Academia' stackId="a" fill="#1f3b6f" radius={[0, 0, 0, 0]} />
-                    <Bar dataKey='Big Tech' stackId="a" fill="#c5c5c5" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey='Big Tech' stackId="a" fill="#c5c5c5" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey='Unmapped' stackId="a" fill="transparent" radius={[4, 4, 0, 0]} hide={true} />
                   </BarChart>
                 </ResponsiveContainer>
                 </Suspense>
@@ -310,19 +558,111 @@ export function ClientBigTechAnalysisPage({ initialData }: ClientBigTechAnalysis
             </CardContent>
           </Card>
 
-          <Card className="mt-6">
+          <Card className="mt-6 border-none shadow-xl">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-semibold">Big Tech by Region</CardTitle>
+              <CardDescription>
+                Breakdown of Big Tech contributions by geographic region (North America, Asia, Europe, Others)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={{}} className="h-[600px]">
+                <Suspense fallback={<ChartSkeleton />}>
+                  <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={chartDataByRegion}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    role="img"
+                    aria-label={`Big Tech by region breakdown ${selectedConferences.length > 0 ? `for selected conferences` : selectedYear ? `for ${selectedYear}` : ''}`}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.3} />
+                    <XAxis dataKey="conference" tick={{ fill: '#6b7280', fontSize: 12 }} />
+                    <YAxis 
+                      domain={[0, 100]}
+                      tick={{ fill: '#6b7280', fontSize: 12 }}
+                      label={{ value: 'Percentage', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#6b7280' } }}
+                      tickFormatter={(v: number) => `${Math.min(100, Math.max(0, Number(Number(v).toFixed(0))))}%`}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                        padding: '12px'
+                      }}
+                      cursor={{ fill: 'rgba(0, 0, 0, 0.02)' }}
+                      formatter={(value: any, name: any) => {
+                        const num = Math.min(100, Math.max(0, Number(Number(value).toFixed(2))));
+                        return [`${num}%`, name];
+                      }}
+                    />
+                    <Legend 
+                      wrapperStyle={{ fontSize: '12px' }}
+                      payload={[
+                        { value: 'Big Tech (NA)', type: 'rect', color: '#ef4444' },
+                        { value: 'Big Tech (EU)', type: 'rect', color: '#60a5fa' },
+                        { value: 'Big Tech (Others)', type: 'rect', color: '#a855f7' },
+                        { value: 'Big Tech (Asia)', type: 'rect', color: '#eab308' },
+                        { value: 'Academia', type: 'rect', color: '#1f3b6f' },
+                        { value: 'Unmapped', type: 'rect', color: 'transparent' },
+                      ]}
+                      content={({ payload }) => (
+                        <ul className="flex flex-wrap justify-center gap-4">
+                          {payload?.map((entry: any, index: number) => (
+                            <li key={index} className="flex items-center gap-2">
+                              {entry.value === 'Unmapped' ? (
+                                <svg width="14" height="14" className="inline-block">
+                                  <rect
+                                    x="1"
+                                    y="1"
+                                    width="12"
+                                    height="12"
+                                    fill="transparent"
+                                    stroke="#9ca3af"
+                                    strokeWidth="1"
+                                    strokeDasharray="3 3"
+                                  />
+                                </svg>
+                              ) : (
+                                <span
+                                  className="inline-block w-3.5 h-3.5 rounded-sm"
+                                  style={{ backgroundColor: entry.color }}
+                                />
+                              )}
+                              <span>{entry.value}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    />
+                    <Bar dataKey='Academia' stackId="a" fill="#1f3b6f" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey='Big Tech (Asia)' stackId="a" fill="#eab308" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey='Big Tech (Others)' stackId="a" fill="#a855f7" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey='Big Tech (EU)' stackId="a" fill="#60a5fa" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey='Big Tech (NA)' stackId="a" fill="#ef4444" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey='Unmapped' stackId="a" fill="transparent" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+                </Suspense>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="mt-6 border-none shadow-xl">
             <CardHeader>
               <CardTitle>Key Insights</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <p className="text-sm">• Bars show percentage split by conference, ordered by highest Big Tech percentage.</p>
+              <p className="text-sm">• Big Tech is broken down by region: North America (red), Europe (light blue), Others (purple), Asia (yellow).</p>
               <p className="text-sm">• Use filters for year/conference to observe changes in the distribution.</p>
             </CardContent>
           </Card>
 
-          <Card className="mt-6">
+          <Card className="mt-6 border-none shadow-xl">
             <CardHeader>
-              <CardTitle>Big Tech vs Academia Over Time</CardTitle>
+              <CardTitle className="text-xl font-semibold">Big Tech vs Academia Over Time</CardTitle>
               <CardDescription>
                 Percentage split per year {selectedConferences.length > 0 ? `for selected conferences` : '(all conferences)'}
               </CardDescription>
@@ -351,11 +691,11 @@ export function ClientBigTechAnalysisPage({ initialData }: ClientBigTechAnalysis
             </CardContent>
           </Card>
 
-          <Card className="mt-6">
+          <Card className="mt-6 border-none shadow-xl">
             <CardHeader>
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <CardTitle>Conference Evolution (Big Tech % over time)</CardTitle>
+                  <CardTitle className="text-xl font-semibold">Conference Evolution (Big Tech % over time)</CardTitle>
                   <CardDescription>
                     {selectedConferences.length > 0 
                       ? `Showing ${selectedConferences.length} selected conference${selectedConferences.length > 1 ? 's' : ''}`

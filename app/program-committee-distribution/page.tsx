@@ -7,7 +7,7 @@ const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
 export const metadata: Metadata = {
   title: "Program Committee Distribution",
-  description: "Analyze the geographic distribution of program committee members across different continents (North America, Europe, Asia, Others) in systems and networks conferences. Filter by conference (OSDI, ASPLOS, NSDI, SIGCOMM, EuroSys, ATC) and year to explore trends from 2000-2024.",
+  description: "Program Committee Distribution: Analyze geographic distribution of program committee members across continents (North America, Europe, Asia, Others) in 13 systems and networks conferences. Filter by conference (OSDI, ASPLOS, NSDI, SIGCOMM, EuroSys, ATC, SOCC, IEEECLOUD, CCGRID, EUROPAR, ICDCS, MIDDLEWARE, IC2E) and year to explore trends from 2000-2024. Interactive bar charts and visualizations.",
   keywords: [
     "program committee distribution",
     "committee geographic distribution",
@@ -17,6 +17,10 @@ export const metadata: Metadata = {
     "Asian committee",
     "conference committee geography",
     "committee trends",
+    "program committee by region",
+    "committee member distribution",
+    "committee geographic analysis",
+    "committee composition trends",
   ],
   alternates: {
     canonical: "/program-committee-distribution",

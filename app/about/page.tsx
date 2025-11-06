@@ -1,12 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Globe, Calendar, Users, BookOpen } from "lucide-react";
+import { Globe, Calendar, Users, BookOpen, User, ExternalLink, Link2, FileText } from "lucide-react";
 import type { Metadata } from "next";
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
 export const metadata: Metadata = {
   title: "About",
-  description: "Learn about the Conference Data Visualizer project, methodology, data sources, and how we analyze academic conference data from systems and networks conferences. Discover our data collection process, continental classification methodology, diversity metrics, and Big Tech vs Academia analysis.",
+  description: "About CSdiversity: Learn about our academic conference data analysis project, methodology, data sources, and research approach. Discover how we collect and analyze data from 13 top-tier systems and networks conferences, our continental classification methodology, diversity metrics calculation, Big Tech vs Academia analysis, and access additional resources including Code Ocean and Data Portal.",
   keywords: [
     "conference data methodology",
     "academic data collection",
@@ -16,20 +16,25 @@ export const metadata: Metadata = {
     "academic research tools",
     "DBLP",
     "Semantic Scholar",
+    "CSdiversity methodology",
+    "conference data collection",
+    "research data sources",
+    "academic research tools",
+    "data visualization methodology",
   ],
   alternates: {
     canonical: "/about",
   },
   openGraph: {
-    title: "About - Conference Data Visualizer | Methodology & Data Sources",
-    description: "Learn about the Conference Data Visualizer project, methodology, data sources, and how we analyze academic conference data from systems and networks conferences.",
+    title: "About CSdiversity | Methodology, Data Sources & Research Approach",
+    description: "Learn about the CSdiversity project, methodology, data sources, and research approach. Discover how we analyze academic conference data from 13 top-tier systems and networks conferences, including data collection, continental classification, diversity metrics, and Big Tech analysis.",
     url: `${baseUrl}/about`,
     type: "website",
   },
   twitter: {
     card: "summary",
-    title: "About - Conference Data Visualizer",
-    description: "Learn about the Conference Data Visualizer project and methodology",
+    title: "About CSdiversity | Methodology & Data Sources",
+    description: "Learn about the CSdiversity project, methodology, data sources, and research approach for analyzing academic conference data",
   },
 };
 
@@ -183,6 +188,105 @@ export default function AboutPage() {
               lacking affiliation data. While minor imperfections may exist, careful verification ensures they 
               do not materially affect the qualitative conclusions of the study.
             </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center space-x-2">
+            <User className="h-5 w-5" />
+            <CardTitle>Authors</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            This project was developed by:
+          </p>
+          <ul className="text-sm space-y-2 mb-4">
+            <li>• Pedro Garcia Lopez</li>
+            <li>• Marina López Alet</li>
+            <li>• Usama Benabdelkrim Zakan</li>
+            <li>• Anwitaman Datta</li>
+          </ul>
+          <div className="mt-4 pt-4 border-t">
+            <p className="text-sm text-muted-foreground mb-3">
+              Research group:
+            </p>
+            <div className="flex items-center gap-3 mb-2">
+              <img 
+                src="/Logo_CloudLab.png" 
+                alt="CloudLab Logo" 
+                className="h-12 w-auto object-contain"
+              />
+              <a 
+                href="https://cloudlab-urv.github.io/WebCloudlab/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                <span>Cloud and Distributed Systems Lab (CLOUDLAB)</span>
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Universitat Rovira i Virgili
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center space-x-2">
+            <FileText className="h-5 w-5" />
+            <CardTitle>Related Publication</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex items-start gap-2">
+              <span className="text-sm text-muted-foreground flex-1">
+                <strong className="text-foreground">How international are international computing conferences? — An exploration with systems research conferences</strong>
+              </span>
+              <span className="text-sm text-muted-foreground italic whitespace-nowrap">
+                Available soon
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center space-x-2">
+            <Link2 className="h-5 w-5" />
+            <CardTitle>Additional Resources</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            Access additional resources and data:
+          </p>
+          <div className="space-y-3">
+            <a 
+              href="https://codeocean.com/capsule/9607607/tree" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              <span>Code Ocean</span>
+              <ExternalLink className="h-4 w-4" />
+            </a>
+            <a 
+              href="https://dx.doi.org/10.21227/h36c-f287" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              <span>Data Port</span>
+              <ExternalLink className="h-4 w-4" />
+            </a>
           </div>
         </CardContent>
       </Card>

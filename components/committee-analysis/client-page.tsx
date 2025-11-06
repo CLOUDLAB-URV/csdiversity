@@ -150,9 +150,7 @@ export function ClientCommitteeAnalysisPage({
       const pTotal = Array.from(pMap.values()).reduce((s, v) => s + v, 0);
       const cTotal = Array.from(cMap.values()).reduce((s, v) => s + v, 0);
 
-      // Only calculate if we have data for at least one
       if (pTotal === 0 && cTotal === 0) {
-        // No data for this conference, skip
         continue;
       }
 
@@ -288,9 +286,7 @@ export function ClientCommitteeAnalysisPage({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Year Range Selector - Redesigned */}
           <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
-            {/* Quick Presets */}
             <div className="flex flex-wrap gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-800">
               <button
                 onClick={() => {
@@ -299,7 +295,7 @@ export function ClientCommitteeAnalysisPage({
                 }}
                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
                   yearRange[0] === yearRange[1] && yearRange[0] === years[years.length - 1]
-                    ? 'bg-blue-600 text-white shadow-md'
+                    ? 'bg-gray-900 text-white shadow-md dark:bg-gray-700'
                     : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
@@ -312,7 +308,7 @@ export function ClientCommitteeAnalysisPage({
                 }}
                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
                   yearRange[0] === Math.max(years[0], years[years.length - 1] - 4) && yearRange[1] === years[years.length - 1]
-                    ? 'bg-blue-600 text-white shadow-md'
+                    ? 'bg-gray-900 text-white shadow-md dark:bg-gray-700'
                     : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
@@ -325,7 +321,7 @@ export function ClientCommitteeAnalysisPage({
                 }}
                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
                   yearRange[0] === Math.max(years[0], years[years.length - 1] - 9) && yearRange[1] === years[years.length - 1]
-                    ? 'bg-blue-600 text-white shadow-md'
+                    ? 'bg-gray-900 text-white shadow-md dark:bg-gray-700'
                     : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
@@ -335,7 +331,7 @@ export function ClientCommitteeAnalysisPage({
                 onClick={() => handleYearRangeChange([years[0], years[years.length - 1]])}
                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
                   yearRange[0] === years[0] && yearRange[1] === years[years.length - 1]
-                    ? 'bg-blue-600 text-white shadow-md'
+                    ? 'bg-gray-900 text-white shadow-md dark:bg-gray-700'
                     : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
@@ -343,7 +339,6 @@ export function ClientCommitteeAnalysisPage({
               </button>
             </div>
 
-            {/* Custom Range Selector */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -354,7 +349,6 @@ export function ClientCommitteeAnalysisPage({
                 </span>
               </div>
 
-              {/* Year Inputs */}
               <div className="flex items-center gap-3">
                 <div className="flex-1">
                   <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">From</label>
@@ -564,7 +558,6 @@ export function ClientCommitteeAnalysisPage({
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Continent Selector Tabs */}
           <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
             {continents.map(continent => (
               <button
@@ -592,7 +585,6 @@ export function ClientCommitteeAnalysisPage({
                 ))}
                 
                 {years.map(year => {
-                  // Calculate gaps for each conference for this year and selected continent
                   const confGaps = new Map<string, number>();
                   const confData = new Map<string, { papersPercent: number; committeePercent: number }>();
                   

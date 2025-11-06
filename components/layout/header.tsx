@@ -28,7 +28,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             </div>
             <div className="min-w-0">
               <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent truncate">
-                Conference Data Visualizer
+                CSdiversity
               </h1>
               <p className="hidden sm:block text-xs text-muted-foreground truncate">
                 Academic Conference Analytics

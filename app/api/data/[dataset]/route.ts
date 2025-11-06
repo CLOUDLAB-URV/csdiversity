@@ -6,7 +6,6 @@ import Papa from 'papaparse';
 const DATASET_TO_FILENAME: Record<string, string> = {
   papers: 'unifiedPaperData.csv',
   committee: 'unifiedCommitteeData.csv',
-  bigtech: 'big_companies_analysis_papers_new.csv',
 };
 
 export async function generateStaticParams() {

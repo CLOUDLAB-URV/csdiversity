@@ -7,7 +7,7 @@ const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
 export const metadata: Metadata = {
   title: "Asian Trends",
-  description: "Track the evolution of Asian academic contributions over time in systems and networks conferences (OSDI, ASPLOS, NSDI, SIGCOMM, EuroSys, ATC). View trends by conference with aggregate and individual line visualizations from 2000-2024. Analyze the growth of Asian research output.",
+  description: "Asian Trends: Track evolution of Asian academic contributions over time in 13 systems and networks conferences (OSDI, ASPLOS, NSDI, SIGCOMM, EuroSys, ATC, SOCC, IEEECLOUD, CCGRID, EUROPAR, ICDCS, MIDDLEWARE, IC2E). View trends by conference with aggregate and individual line visualizations from 2000-2024. Analyze growth of Asian research output, institutions, and academic participation.",
   keywords: [
     "Asian academic trends",
     "Asian research contributions",
@@ -17,6 +17,10 @@ export const metadata: Metadata = {
     "research evolution",
     "Asian institutions",
     "academic growth",
+    "Asian research trends",
+    "Asian academic participation",
+    "Asian institutions research",
+    "Asian contribution growth",
   ],
   alternates: {
     canonical: "/asian-trends",

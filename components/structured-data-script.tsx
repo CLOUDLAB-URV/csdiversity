@@ -9,9 +9,9 @@ export function StructuredDataScript() {
     const webApplicationSchema = {
       "@context": "https://schema.org",
       "@type": "WebApplication",
-      "name": "Conference Data Visualizer",
-      "alternateName": "Academic Conference Data Visualizer",
-      "description": "Visualize and analyze academic conference data from top-tier systems and networks conferences (OSDI, ASPLOS, NSDI, SIGCOMM, EuroSys, ATC). Track geographic distribution, Asian trends, diversity metrics, and Big Tech vs Academia contributions.",
+      "name": "CSdiversity",
+      "alternateName": "CSdiversity",
+      "description": "CSdiversity: Comprehensive academic conference data analysis and visualization platform. Explore geographic distribution, Asian trends, Big Tech vs Academia contributions, committee diversity, and research patterns across 13 top-tier systems and networks conferences (OSDI, ASPLOS, NSDI, SIGCOMM, EuroSys, ATC, SOCC, IEEECLOUD, CCGRID, EUROPAR, ICDCS, MIDDLEWARE, IC2E) from 2000-2024.",
       "url": baseUrl,
       "applicationCategory": "DataVisualization",
       "operatingSystem": "Web",
@@ -23,19 +23,21 @@ export function StructuredDataScript() {
       },
       "creator": {
         "@type": "Organization",
-        "name": "Conference Data Visualizer",
+        "name": "CSdiversity",
         "url": baseUrl
       },
       "featureList": [
-        "Geographic distribution analysis",
-        "Asian trends tracking",
-        "Big Tech vs Academia comparison",
-        "Committee vs Papers analysis",
-        "Diversity metrics visualization",
+        "Geographic distribution analysis of accepted papers",
+        "Program committee geographic distribution",
+        "Asian academic trends tracking over time",
+        "Big Tech vs Academia comparison with regional breakdown",
+        "Committee vs Papers representation gap analysis",
+        "Diversity metrics visualization (Gini-Simpson Index)",
         "Interactive filtering by conference and year",
-        "Data from 2000-2024"
+        "Data visualization from 2000-2024",
+        "13 top-tier systems and networks conferences"
       ],
-      "keywords": "academic conferences, systems research, networks research, data visualization, OSDI, ASPLOS, NSDI, SIGCOMM, EuroSys, ATC",
+      "keywords": "academic conferences, systems research, networks research, data visualization, OSDI, ASPLOS, NSDI, SIGCOMM, EuroSys, ATC, SOCC, IEEECLOUD, CCGRID, EUROPAR, ICDCS, MIDDLEWARE, IC2E, geographic distribution, Asian trends, Big Tech research, committee diversity",
       "inLanguage": "en-US",
       "datePublished": "2024-01-01",
       "dateModified": new Date().toISOString().split('T')[0]
@@ -45,7 +47,7 @@ export function StructuredDataScript() {
       "@context": "https://schema.org",
       "@type": "Dataset",
       "name": "Academic Conference Data",
-      "description": "Dataset containing academic conference papers, committee members, and geographic distribution data from systems and networks conferences. Includes approximately 9,712 accepted papers and 14,996 program committee members from OSDI, ASPLOS, NSDI, SIGCOMM, EuroSys, ATC, and other top-tier conferences.",
+      "description": "Dataset containing academic conference papers, committee members, and geographic distribution data from 13 systems and networks conferences. Includes approximately 9,712 accepted papers and 14,996 program committee members (6,917 unique individuals) from OSDI, ASPLOS, NSDI, SIGCOMM, EuroSys, ATC, SOCC, IEEECLOUD, CCGRID, EUROPAR, ICDCS, MIDDLEWARE, and IC2E. Data spans 2000-2024 with continental classification, Big Tech affiliation detection, and diversity metrics.",
       "url": `${baseUrl}/about`,
       "keywords": [
         "academic conferences",
@@ -58,13 +60,23 @@ export function StructuredDataScript() {
         "SIGCOMM",
         "EuroSys",
         "ATC",
+        "SOCC",
+        "IEEECLOUD",
+        "CCGRID",
+        "EUROPAR",
+        "ICDCS",
+        "MIDDLEWARE",
+        "IC2E",
         "program committee",
-        "geographic distribution"
+        "geographic distribution",
+        "Big Tech research",
+        "Asian trends",
+        "diversity metrics"
       ],
       "license": "https://creativecommons.org/licenses/by/4.0/",
       "creator": {
         "@type": "Organization",
-        "name": "Conference Data Visualizer",
+        "name": "CSdiversity",
         "url": baseUrl
       },
       "distribution": [
@@ -80,12 +92,6 @@ export function StructuredDataScript() {
           "encodingFormat": "CSV",
           "name": "Unified Committee Data"
         },
-        {
-        "@type": "DataDownload",
-          "contentUrl": `${baseUrl}/data/big_companies_analysis_papers_new.csv`,
-          "encodingFormat": "CSV",
-          "name": "Big Tech Analysis Data"
-      }
       ],
       "temporalCoverage": "2000/2024",
       "spatialCoverage": {
@@ -94,7 +100,7 @@ export function StructuredDataScript() {
       },
       "includedInDataCatalog": {
         "@type": "DataCatalog",
-        "name": "Conference Data Visualizer Dataset"
+        "name": "CSdiversity Dataset"
       }
     }
 
@@ -114,12 +120,12 @@ export function StructuredDataScript() {
     const organizationSchema = {
       "@context": "https://schema.org",
       "@type": "Organization",
-      "name": "Conference Data Visualizer",
+      "name": "CSdiversity",
       "url": baseUrl,
       "logo": `${baseUrl}/logo.png`,
-      "description": "Academic conference data visualization and analysis platform",
+      "description": "Academic conference data visualization and analysis platform for systems and networks research",
       "sameAs": [
-        "https://github.com/Marina-LA/ConferenceData"
+        "https://github.com/CLOUDLAB-URV/csdiversity"
       ]
     }
 

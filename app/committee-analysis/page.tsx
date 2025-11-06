@@ -7,7 +7,7 @@ const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
 export const metadata: Metadata = {
   title: "Committee vs Papers",
-  description: "Compare geographic distribution between program committees and accepted papers in systems and networks conferences. Analyze gaps in representation across continents (North America, Europe, Asia) and conferences over time. Identify over-representation and under-representation patterns.",
+  description: "Committee vs Papers: Compare geographic distribution between program committees and accepted papers in 13 systems and networks conferences. Analyze representation gaps across continents (North America, Europe, Asia, Others) and conferences over time. Identify over-representation and under-representation patterns with interactive heatmaps and gap analysis from 2000-2024.",
   keywords: [
     "program committee",
     "committee diversity",
@@ -17,6 +17,10 @@ export const metadata: Metadata = {
     "representation gap",
     "committee composition",
     "diversity analysis",
+    "committee representation gap",
+    "committee vs papers comparison",
+    "representation analysis",
+    "committee diversity metrics",
   ],
   alternates: {
     canonical: "/committee-analysis",
