@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Globe, Calendar, Users, BookOpen, User, ExternalLink, Link2, FileText } from "lucide-react";
 import type { Metadata } from "next";
+import Image from "next/image";
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
@@ -214,9 +215,11 @@ export default function AboutPage() {
               Research group:
             </p>
             <div className="flex items-center gap-3 mb-2">
-              <img 
-                src="/Logo_CloudLab.png" 
+              <Image 
+                src="/Logo_CloudLab.png"
                 alt="CloudLab Logo" 
+                width={48}
+                height={48}
                 className="h-12 w-auto object-contain"
               />
               <a 
