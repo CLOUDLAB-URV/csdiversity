@@ -17,9 +17,19 @@ export interface ContinentDistributionItem {
   'Others': number;
 }
 
+const normalizeConferenceName = (conf: string): string => {
+  const normalized = String(conf ?? '').trim().toUpperCase();
+  const conferenceMap: Record<string, string> = {
+    'CLOUD': 'SOCC',
+    'IEEECLOUD': 'IEEECLOUD',
+    'IEEE CLOUD': 'IEEECLOUD',
+  };
+  return conferenceMap[normalized] || normalized;
+};
+
 export function processContinentDistribution(raw: any[]): ContinentDistributionItem[] {
   const key = (v: any) => String(v ?? '').trim();
-  const normConf = (c: string) => key(c).toUpperCase();
+  const normConf = (c: string) => normalizeConferenceName(c);
   const normCont = (c: string) => key(c).toUpperCase();
   const buckets = new Map<string, ContinentDistributionItem>();
 
@@ -54,7 +64,7 @@ export function processContinentDistribution(raw: any[]): ContinentDistributionI
 
 export function processCommitteeContinentDistribution(raw: any[]): ContinentDistributionItem[] {
   const key = (v: any) => String(v ?? '').trim();
-  const normConf = (c: string) => key(c).toUpperCase();
+  const normConf = (c: string) => normalizeConferenceName(c);
   const normCont = (c: string) => key(c).toUpperCase();
   const buckets = new Map<string, ContinentDistributionItem>();
 
@@ -95,7 +105,7 @@ export interface AsianTrendItem {
 
 export function processAsianTrends(raw: any[]): AsianTrendItem[] {
   const key = (v: any) => String(v ?? '').trim();
-  const normConf = (c: string) => key(c).toUpperCase();
+  const normConf = (c: string) => normalizeConferenceName(c);
   const normCont = (c: string) => key(c).toUpperCase();
   const counts = new Map<string, { asia: number; total: number; conference: string; year: number }>();
 
@@ -132,7 +142,7 @@ export function processBigTech(raw: any[]): BigTechItem[] {
   const byKey = new Map<string, { conference: string; year: number; bt: number; ac: number }>();
   
   for (const r of raw) {
-    const conference = String((r.conference ?? r.Conference ?? '')).trim().toUpperCase();
+    const conference = normalizeConferenceName(r.conference ?? r.Conference ?? '');
     const year = Number(r.year ?? r.Year);
     if (!conference || !Number.isFinite(year)) continue;
     const k = `${conference}:${year}`;
@@ -207,7 +217,7 @@ export function processCommitteeVsPapers(papersRaw: any[], committeeRaw: any[]):
 
   const papersByConf = new Map<string, Map<string, number>>();
   for (const r of papersRaw) {
-    const conf = String(r.conference ?? r.Conference ?? '').trim().toUpperCase();
+    const conf = normalizeConferenceName(r.conference ?? r.Conference ?? '');
     if (!conf) continue;
     const cont = normalizeCont(r.predominant_continent ?? r['Predominant Continent'] ?? r.continent ?? '');
     if (!papersByConf.has(conf)) papersByConf.set(conf, new Map());
@@ -217,7 +227,7 @@ export function processCommitteeVsPapers(papersRaw: any[], committeeRaw: any[]):
 
   const committeeByConf = new Map<string, Map<string, number>>();
   for (const r of committeeRaw) {
-    const conf = String(r.conference ?? r.Conference ?? '').trim().toUpperCase();
+    const conf = normalizeConferenceName(r.conference ?? r.Conference ?? '');
     if (!conf) continue;
     const cont = normalizeCont(r.continent ?? r.Continent ?? '');
     if (!committeeByConf.has(conf)) committeeByConf.set(conf, new Map());
@@ -283,7 +293,7 @@ export function processCommitteeVsPapersByYear(papersRaw: any[], committeeRaw: a
 
   const papersByConfYear = new Map<string, Map<string, number>>();
   for (const r of papersRaw) {
-    const conf = String(r.conference ?? r.Conference ?? '').trim().toUpperCase();
+    const conf = normalizeConferenceName(r.conference ?? r.Conference ?? '');
     const year = Number(r.year ?? r.Year);
     if (!conf || !Number.isFinite(year)) continue;
     const cont = normalizeCont(r.predominant_continent ?? r['Predominant Continent'] ?? r.continent ?? '');
@@ -295,7 +305,7 @@ export function processCommitteeVsPapersByYear(papersRaw: any[], committeeRaw: a
 
   const committeeByConfYear = new Map<string, Map<string, number>>();
   for (const r of committeeRaw) {
-    const conf = String(r.conference ?? r.Conference ?? '').trim().toUpperCase();
+    const conf = normalizeConferenceName(r.conference ?? r.Conference ?? '');
     const year = Number(r.year ?? r.Year);
     if (!conf || !Number.isFinite(year)) continue;
     const cont = normalizeCont(r.continent ?? r.Continent ?? '');
@@ -364,7 +374,7 @@ export interface DiversityData {
 }
 
 export function processDiversity(papersRaw: any[], committeeRaw: any[]): DiversityData[] {
-  const normalizeConf = (c: string): string => String(c ?? '').trim().toUpperCase();
+  const normalizeConf = (c: string): string => normalizeConferenceName(c);
   const normalizeCont = (c: string): string => {
     const val = String(c ?? '').trim().toUpperCase();
     if (['NA', 'NORTH AMERICA', 'NORTH_AMERICA', 'AMERICA'].includes(val)) return 'North America';
@@ -374,12 +384,12 @@ export function processDiversity(papersRaw: any[], committeeRaw: any[]): Diversi
     return 'Other';
   };
 
-  const knownConferences = ['OSDI', 'ASPLOS', 'NSDI', 'SIGCOMM', 'EUROSYS', 'ATC'];
+  const knownConferences = ['OSDI', 'ASPLOS', 'NSDI', 'SIGCOMM', 'EUROSYS', 'ATC', 'SOCC', 'IEEECLOUD', 'CCGRID', 'EUROPAR', 'ICDCS', 'MIDDLEWARE', 'IC2E'];
 
   const papersByConf = new Map<string, Map<string, number>>();
   for (const row of papersRaw) {
     const conf = normalizeConf(row.conference ?? row.Conference);
-    if (!conf) continue;
+    if (!conf || /^\d+$/.test(conf)) continue;
     
     const cont = normalizeCont(row.predominant_continent ?? row['Predominant Continent'] ?? row.continent ?? '');
     if (!papersByConf.has(conf)) papersByConf.set(conf, new Map());
@@ -390,7 +400,7 @@ export function processDiversity(papersRaw: any[], committeeRaw: any[]): Diversi
   const committeeByConf = new Map<string, Map<string, number>>();
   for (const row of committeeRaw) {
     const conf = normalizeConf(row.conference ?? row.Conference);
-    if (!conf) continue;
+    if (!conf || /^\d+$/.test(conf)) continue;
     
     const cont = normalizeCont(row.continent ?? row.Continent ?? '');
     if (!committeeByConf.has(conf)) committeeByConf.set(conf, new Map());

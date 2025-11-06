@@ -32,11 +32,19 @@ interface ClientDiversityPageProps {
 
 export const ClientDiversityPage = memo(function ClientDiversityPage({ initialData }: ClientDiversityPageProps) {
   const radarData = useMemo(() => {
-    return initialData.map(d => ({
-      conference: d.conference,
-      Committee: d.committee,
-      Papers: d.papers,
-    }));
+    const validConferences = ['OSDI', 'ASPLOS', 'NSDI', 'SIGCOMM', 'EUROSYS', 'ATC', 'SOCC', 'IEEECLOUD', 'CCGRID', 'EUROPAR', 'ICDCS', 'MIDDLEWARE', 'IC2E'];
+    return initialData
+      .filter(d => {
+        const conf = d.conference;
+        if (!conf) return false;
+        if (/^\d+$/.test(conf)) return false;
+        return validConferences.includes(conf) || /^[A-Z0-9]{2,}$/.test(conf);
+      })
+      .map(d => ({
+        conference: d.conference,
+        Committee: d.committee,
+        Papers: d.papers,
+      }));
   }, [initialData]);
 
   return (

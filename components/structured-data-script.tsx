@@ -81,11 +81,11 @@ export function StructuredDataScript() {
           "name": "Unified Committee Data"
         },
         {
-          "@type": "DataDownload",
+        "@type": "DataDownload",
           "contentUrl": `${baseUrl}/data/big_companies_analysis_papers_new.csv`,
           "encodingFormat": "CSV",
           "name": "Big Tech Analysis Data"
-        }
+      }
       ],
       "temporalCoverage": "2000/2024",
       "spatialCoverage": {

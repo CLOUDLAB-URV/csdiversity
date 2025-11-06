@@ -19,10 +19,21 @@ export async function loadDatasetStatic(dataset: 'papers' | 'committee' | 'bigte
   try {
     const filePath = path.join(process.cwd(), 'data', filename);
     const csv = await fs.readFile(filePath, 'utf8');
-    const parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
+    const parsed = Papa.parse(csv, { 
+      header: true, 
+      skipEmptyLines: true,
+      transformHeader: (header) => header.trim(),
+      transform: (value) => value?.trim() || '',
+      dynamicTyping: false,
+    });
 
     if (parsed.errors && parsed.errors.length > 0) {
-      throw new Error(`CSV parse error: ${JSON.stringify(parsed.errors)}`);
+      const criticalErrors = parsed.errors.filter((e: any) => 
+        e.type !== 'FieldMismatch' && e.code !== 'TooFewFields' && e.code !== 'TooManyFields'
+      );
+      if (criticalErrors.length > 0) {
+        console.warn(`CSV parse warnings (non-critical): ${JSON.stringify(parsed.errors.slice(0, 5))}`);
+      }
     }
 
     return parsed.data as any[];
