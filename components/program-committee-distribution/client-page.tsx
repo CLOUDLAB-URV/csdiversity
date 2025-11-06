@@ -75,26 +75,23 @@ export function ClientProgramCommitteeDistributionPage({ initialData, conference
     const isSingleConference = selectedConferences.length === 1 && !selectedYear;
     
     if (isSingleConference) {
-      const grouped = new Map<number, { na: number; eu: number; asia: number; other: number }>();
+      const grouped = new Map<number, { na: number; eu: number; asia: number; other: number; total: number }>();
       filteredData.forEach(d => {
-        const g = grouped.get(d.year) || { na: 0, eu: 0, asia: 0, other: 0 };
+        const g = grouped.get(d.year) || { na: 0, eu: 0, asia: 0, other: 0, total: 0 };
         g.na += d['North America'];
         g.eu += d['Europe'];
         g.asia += d['Asia'];
         g.other += d['Others'];
+        g.total += d.total;
         grouped.set(d.year, g);
       });
       const rows = Array.from(grouped.entries())
         .map(([year, v]) => {
-          const total = v.na + v.eu + v.asia + v.other || 1;
+          const total = v.total || 1;
           const pNA = Number(((v.na / total) * 100).toFixed(2));
           const pEU = Number(((v.eu / total) * 100).toFixed(2));
           const pAS = Number(((v.asia / total) * 100).toFixed(2));
-          let pOT = Number(((v.other / total) * 100).toFixed(2));
-          const sumFirstThree = pNA + pEU + pAS;
-          pOT = Number((100 - sumFirstThree).toFixed(2));
-          if (pOT < 0) pOT = 0;
-          if (pOT > 100) pOT = 100;
+          const pOT = Number(((v.other / total) * 100).toFixed(2));
           return {
             conference: String(year),
             'North America': pNA,
@@ -106,25 +103,22 @@ export function ClientProgramCommitteeDistributionPage({ initialData, conference
         .sort((a, b) => Number(a.conference) - Number(b.conference));
       return rows;
     } else {
-      const grouped = new Map<string, { na: number; eu: number; asia: number; other: number }>();
+      const grouped = new Map<string, { na: number; eu: number; asia: number; other: number; total: number }>();
       filteredData.forEach(d => {
-        const g = grouped.get(d.conference) || { na: 0, eu: 0, asia: 0, other: 0 };
+        const g = grouped.get(d.conference) || { na: 0, eu: 0, asia: 0, other: 0, total: 0 };
         g.na += d['North America'];
         g.eu += d['Europe'];
         g.asia += d['Asia'];
         g.other += d['Others'];
+        g.total += d.total;
         grouped.set(d.conference, g);
       });
       const rows = Array.from(grouped.entries()).map(([conf, v]) => {
-        const total = v.na + v.eu + v.asia + v.other || 1;
+        const total = v.total || 1;
         const pNA = Number(((v.na / total) * 100).toFixed(2));
         const pEU = Number(((v.eu / total) * 100).toFixed(2));
         const pAS = Number(((v.asia / total) * 100).toFixed(2));
-        let pOT = Number(((v.other / total) * 100).toFixed(2));
-        const sumFirstThree = pNA + pEU + pAS;
-        pOT = Number((100 - sumFirstThree).toFixed(2));
-        if (pOT < 0) pOT = 0;
-        if (pOT > 100) pOT = 100;
+        const pOT = Number(((v.other / total) * 100).toFixed(2));
         return {
           conference: conf,
           'North America': pNA,

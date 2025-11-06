@@ -15,6 +15,7 @@ export interface ContinentDistributionItem {
   'Europe': number;
   'Asia': number;
   'Others': number;
+  total: number;
 }
 
 const normalizeConferenceName = (conf: string): string => {
@@ -27,11 +28,21 @@ const normalizeConferenceName = (conf: string): string => {
   return conferenceMap[normalized] || normalized;
 };
 
+const normalizeContinentForDistribution = (c: string): string | null => {
+  const val = String(c ?? '').trim().toUpperCase();
+  if (!val) return null;
+  if (['NA', 'NORTH AMERICA', 'NORTH_AMERICA', 'AMERICA'].includes(val)) return 'North America';
+  if (['EU', 'EUROPE'].includes(val)) return 'Europe';
+  if (['AS', 'ASIA'].includes(val)) return 'Asia';
+  if (['SA', 'SOUTH AMERICA', 'OC', 'OCEANIA', 'AF', 'AFRICA'].includes(val)) return 'Others';
+  return null;
+};
+
 export function processContinentDistribution(raw: any[]): ContinentDistributionItem[] {
   const key = (v: any) => String(v ?? '').trim();
   const normConf = (c: string) => normalizeConferenceName(c);
-  const normCont = (c: string) => key(c).toUpperCase();
   const buckets = new Map<string, ContinentDistributionItem>();
+  const totals = new Map<string, number>();
 
   for (const row of raw) {
     const conf = normConf(row.conference ?? row.Conference);
@@ -39,8 +50,12 @@ export function processContinentDistribution(raw: any[]): ContinentDistributionI
     const year = Number(yearVal);
     if (!conf || !Number.isFinite(year)) continue;
 
-    const contCode = normCont(row.predominant_continent ?? row['Predominant Continent'] ?? row.continent);
     const keyId = `${conf}:${year}`;
+    totals.set(keyId, (totals.get(keyId) ?? 0) + 1);
+
+    const continent = normalizeContinentForDistribution(row.predominant_continent ?? row['Predominant Continent'] ?? row.continent);
+    if (!continent) continue;
+
     let cur = buckets.get(keyId);
     if (!cur) {
       cur = {
@@ -50,23 +65,27 @@ export function processContinentDistribution(raw: any[]): ContinentDistributionI
         'Europe': 0,
         'Asia': 0,
         'Others': 0,
+        total: 0,
       };
       buckets.set(keyId, cur);
     }
-    if (contCode === 'NA' || contCode === 'NORTH AMERICA') cur['North America'] += 1;
-    else if (contCode === 'EU' || contCode === 'EUROPE') cur['Europe'] += 1;
-    else if (contCode === 'AS' || contCode === 'ASIA') cur['Asia'] += 1;
-    else cur['Others'] += 1;
+    cur[continent as keyof ContinentDistributionItem] = (cur[continent as keyof ContinentDistributionItem] as number) + 1;
   }
 
-  return Array.from(buckets.values()).sort((a, b) => a.year - b.year || a.conference.localeCompare(b.conference));
+  const result = Array.from(buckets.values());
+  for (const item of result) {
+    const keyId = `${item.conference}:${item.year}`;
+    item.total = totals.get(keyId) ?? 0;
+  }
+
+  return result.sort((a, b) => a.year - b.year || a.conference.localeCompare(b.conference));
 }
 
 export function processCommitteeContinentDistribution(raw: any[]): ContinentDistributionItem[] {
   const key = (v: any) => String(v ?? '').trim();
   const normConf = (c: string) => normalizeConferenceName(c);
-  const normCont = (c: string) => key(c).toUpperCase();
   const buckets = new Map<string, ContinentDistributionItem>();
+  const totals = new Map<string, number>();
 
   for (const row of raw) {
     const conf = normConf(row.conference ?? row.Conference);
@@ -74,8 +93,12 @@ export function processCommitteeContinentDistribution(raw: any[]): ContinentDist
     const year = Number(yearVal);
     if (!conf || !Number.isFinite(year)) continue;
 
-    const contCode = normCont(row.continent ?? row.Continent ?? '');
     const keyId = `${conf}:${year}`;
+    totals.set(keyId, (totals.get(keyId) ?? 0) + 1);
+
+    const continent = normalizeContinentForDistribution(row.continent ?? row.Continent ?? '');
+    if (!continent) continue;
+
     let cur = buckets.get(keyId);
     if (!cur) {
       cur = {
@@ -85,16 +108,20 @@ export function processCommitteeContinentDistribution(raw: any[]): ContinentDist
         'Europe': 0,
         'Asia': 0,
         'Others': 0,
+        total: 0,
       };
       buckets.set(keyId, cur);
     }
-    if (contCode === 'NA' || contCode === 'NORTH AMERICA' || contCode === 'NORTH_AMERICA' || contCode === 'AMERICA') cur['North America'] += 1;
-    else if (contCode === 'EU' || contCode === 'EUROPE') cur['Europe'] += 1;
-    else if (contCode === 'AS' || contCode === 'ASIA') cur['Asia'] += 1;
-    else cur['Others'] += 1;
+    cur[continent as keyof ContinentDistributionItem] = (cur[continent as keyof ContinentDistributionItem] as number) + 1;
   }
 
-  return Array.from(buckets.values()).sort((a, b) => a.year - b.year || a.conference.localeCompare(b.conference));
+  const result = Array.from(buckets.values());
+  for (const item of result) {
+    const keyId = `${item.conference}:${item.year}`;
+    item.total = totals.get(keyId) ?? 0;
+  }
+
+  return result.sort((a, b) => a.year - b.year || a.conference.localeCompare(b.conference));
 }
 
 export interface AsianTrendItem {
@@ -106,7 +133,6 @@ export interface AsianTrendItem {
 export function processAsianTrends(raw: any[]): AsianTrendItem[] {
   const key = (v: any) => String(v ?? '').trim();
   const normConf = (c: string) => normalizeConferenceName(c);
-  const normCont = (c: string) => key(c).toUpperCase();
   const counts = new Map<string, { asia: number; total: number; conference: string; year: number }>();
 
   for (const row of raw) {
@@ -114,11 +140,14 @@ export function processAsianTrends(raw: any[]): AsianTrendItem[] {
     const yearVal = row.year ?? row.Year;
     const year = Number(yearVal);
     if (!conf || !Number.isFinite(year)) continue;
-    const contCode = normCont(row.predominant_continent ?? row['Predominant Continent'] ?? row.continent);
+    
+    const continent = normalizeContinentForDistribution(row.predominant_continent ?? row['Predominant Continent'] ?? row.continent);
+    if (!continent) continue;
+    
     const id = `${conf}:${year}`;
     const cur = counts.get(id) || { asia: 0, total: 0, conference: conf, year };
     cur.total += 1;
-    if (contCode === 'AS' || contCode === 'ASIA') cur.asia += 1;
+    if (continent === 'Asia') cur.asia += 1;
     counts.set(id, cur);
   }
 
@@ -205,14 +234,15 @@ export interface CommitteeVsPapersItem {
 }
 
 export function processCommitteeVsPapers(papersRaw: any[], committeeRaw: any[]): CommitteeVsPapersItem[] {
-  const normalizeCont = (c: string): string => {
+  const normalizeCont = (c: string): string | null => {
     const val = String(c ?? '').trim().toUpperCase();
+    if (!val) return null;
     if (['NA', 'NORTH AMERICA', 'NORTH_AMERICA', 'AMERICA'].includes(val)) return 'North America';
     if (['EU', 'EUROPE'].includes(val)) return 'Europe';
     if (['AS', 'ASIA'].includes(val)) return 'Asia';
-    if (['OC', 'OCEANIA', 'AF', 'AFRICA', 'SA', 'SOUTH AMERICA'].includes(val)) return 'Other';
-    if (!val || val === 'UNKNOWN') return 'Unknown';
-    return 'Other';
+    if (['SA', 'SOUTH AMERICA', 'OC', 'OCEANIA', 'AF', 'AFRICA'].includes(val)) return 'Other';
+    if (val === 'UNKNOWN') return 'Unknown';
+    return null;
   };
 
   const papersByConf = new Map<string, Map<string, number>>();
@@ -220,6 +250,7 @@ export function processCommitteeVsPapers(papersRaw: any[], committeeRaw: any[]):
     const conf = normalizeConferenceName(r.conference ?? r.Conference ?? '');
     if (!conf) continue;
     const cont = normalizeCont(r.predominant_continent ?? r['Predominant Continent'] ?? r.continent ?? '');
+    if (!cont) continue;
     if (!papersByConf.has(conf)) papersByConf.set(conf, new Map());
     const contMap = papersByConf.get(conf)!;
     contMap.set(cont, (contMap.get(cont) ?? 0) + 1);
@@ -230,6 +261,7 @@ export function processCommitteeVsPapers(papersRaw: any[], committeeRaw: any[]):
     const conf = normalizeConferenceName(r.conference ?? r.Conference ?? '');
     if (!conf) continue;
     const cont = normalizeCont(r.continent ?? r.Continent ?? '');
+    if (!cont) continue;
     if (!committeeByConf.has(conf)) committeeByConf.set(conf, new Map());
     const contMap = committeeByConf.get(conf)!;
     contMap.set(cont, (contMap.get(cont) ?? 0) + 1);
@@ -281,14 +313,15 @@ export interface CommitteeVsPapersByYearItem {
 }
 
 export function processCommitteeVsPapersByYear(papersRaw: any[], committeeRaw: any[]): CommitteeVsPapersByYearItem[] {
-  const normalizeCont = (c: string): string => {
+  const normalizeCont = (c: string): string | null => {
     const val = String(c ?? '').trim().toUpperCase();
+    if (!val) return null;
     if (['NA', 'NORTH AMERICA', 'NORTH_AMERICA', 'AMERICA'].includes(val)) return 'North America';
     if (['EU', 'EUROPE'].includes(val)) return 'Europe';
     if (['AS', 'ASIA'].includes(val)) return 'Asia';
-    if (['OC', 'OCEANIA', 'AF', 'AFRICA', 'SA', 'SOUTH AMERICA'].includes(val)) return 'Other';
-    if (!val || val === 'UNKNOWN') return 'Unknown';
-    return 'Other';
+    if (['SA', 'SOUTH AMERICA', 'OC', 'OCEANIA', 'AF', 'AFRICA'].includes(val)) return 'Other';
+    if (val === 'UNKNOWN') return 'Unknown';
+    return null;
   };
 
   const papersByConfYear = new Map<string, Map<string, number>>();
@@ -297,6 +330,7 @@ export function processCommitteeVsPapersByYear(papersRaw: any[], committeeRaw: a
     const year = Number(r.year ?? r.Year);
     if (!conf || !Number.isFinite(year)) continue;
     const cont = normalizeCont(r.predominant_continent ?? r['Predominant Continent'] ?? r.continent ?? '');
+    if (!cont) continue;
     const key = `${conf}:${year}`;
     if (!papersByConfYear.has(key)) papersByConfYear.set(key, new Map());
     const contMap = papersByConfYear.get(key)!;
@@ -309,6 +343,7 @@ export function processCommitteeVsPapersByYear(papersRaw: any[], committeeRaw: a
     const year = Number(r.year ?? r.Year);
     if (!conf || !Number.isFinite(year)) continue;
     const cont = normalizeCont(r.continent ?? r.Continent ?? '');
+    if (!cont) continue;
     const key = `${conf}:${year}`;
     if (!committeeByConfYear.has(key)) committeeByConfYear.set(key, new Map());
     const contMap = committeeByConfYear.get(key)!;
@@ -375,13 +410,14 @@ export interface DiversityData {
 
 export function processDiversity(papersRaw: any[], committeeRaw: any[]): DiversityData[] {
   const normalizeConf = (c: string): string => normalizeConferenceName(c);
-  const normalizeCont = (c: string): string => {
+  const normalizeContForDiversity = (c: string): string | null => {
     const val = String(c ?? '').trim().toUpperCase();
+    if (!val) return null;
     if (['NA', 'NORTH AMERICA', 'NORTH_AMERICA', 'AMERICA'].includes(val)) return 'North America';
     if (['EU', 'EUROPE'].includes(val)) return 'Europe';
     if (['AS', 'ASIA'].includes(val)) return 'Asia';
-    if (['OC', 'OCEANIA', 'AF', 'AFRICA', 'SA', 'SOUTH AMERICA'].includes(val)) return 'Other';
-    return 'Other';
+    if (['SA', 'SOUTH AMERICA', 'OC', 'OCEANIA', 'AF', 'AFRICA'].includes(val)) return 'Other';
+    return null;
   };
 
   const knownConferences = ['OSDI', 'ASPLOS', 'NSDI', 'SIGCOMM', 'EUROSYS', 'ATC', 'SOCC', 'IEEECLOUD', 'CCGRID', 'EUROPAR', 'ICDCS', 'MIDDLEWARE', 'IC2E'];
@@ -391,7 +427,9 @@ export function processDiversity(papersRaw: any[], committeeRaw: any[]): Diversi
     const conf = normalizeConf(row.conference ?? row.Conference);
     if (!conf || /^\d+$/.test(conf)) continue;
     
-    const cont = normalizeCont(row.predominant_continent ?? row['Predominant Continent'] ?? row.continent ?? '');
+    const cont = normalizeContForDiversity(row.predominant_continent ?? row['Predominant Continent'] ?? row.continent ?? '');
+    if (!cont) continue;
+    
     if (!papersByConf.has(conf)) papersByConf.set(conf, new Map());
     const contMap = papersByConf.get(conf)!;
     contMap.set(cont, (contMap.get(cont) ?? 0) + 1);
@@ -402,7 +440,9 @@ export function processDiversity(papersRaw: any[], committeeRaw: any[]): Diversi
     const conf = normalizeConf(row.conference ?? row.Conference);
     if (!conf || /^\d+$/.test(conf)) continue;
     
-    const cont = normalizeCont(row.continent ?? row.Continent ?? '');
+    const cont = normalizeContForDiversity(row.continent ?? row.Continent ?? '');
+    if (!cont) continue;
+    
     if (!committeeByConf.has(conf)) committeeByConf.set(conf, new Map());
     const contMap = committeeByConf.get(conf)!;
     contMap.set(cont, (contMap.get(cont) ?? 0) + 1);
