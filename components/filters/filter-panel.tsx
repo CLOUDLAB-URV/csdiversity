@@ -3,6 +3,7 @@
 import { useMemo, useState, memo, useCallback } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { trackEvent } from "@/lib/analytics";
 
 interface FilterPanelProps {
   conferences: string[];
@@ -39,10 +40,19 @@ export const FilterPanel = memo(function FilterPanel({
   
   const handleSelectAll = useCallback(() => {
     onConferencesChange?.(conferences);
+    trackEvent({
+      action: "filter_conference_select_all",
+      category: "filters",
+      value: conferences.length,
+    });
   }, [onConferencesChange, conferences]);
   
   const handleClear = useCallback(() => {
     onConferencesChange?.([]);
+    trackEvent({
+      action: "filter_conference_clear",
+      category: "filters",
+    });
   }, [onConferencesChange]);
 
   return (
@@ -103,7 +113,14 @@ export const FilterPanel = memo(function FilterPanel({
                       checked={(selectedConferences?.length ?? 0) === 0}
                       className="focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                       aria-label="Select all conferences option"
-                      onChange={() => onConferencesChange?.([])}
+                    onChange={() => {
+                      onConferencesChange?.([]);
+                      trackEvent({
+                        action: "filter_conference_all_toggle",
+                        category: "filters",
+                        label: "all",
+                      });
+                    }}
                     />
                     <span>All Conferences</span>
                   </label>
@@ -118,12 +135,24 @@ export const FilterPanel = memo(function FilterPanel({
                             if (e.target.checked) {
                               const next = Array.from(new Set([...(selectedConferences ?? []), conf]));
                               onConferencesChange?.(next);
+                        trackEvent({
+                          action: "filter_conference_add",
+                          category: "filters",
+                          label: conf,
+                          value: next.length,
+                        });
                               if (onConferenceChange) {
                                 onConferenceChange('all');
                               }
                             } else {
                               const next = (selectedConferences ?? []).filter(c => c !== conf);
                               onConferencesChange?.(next);
+                        trackEvent({
+                          action: "filter_conference_remove",
+                          category: "filters",
+                          label: conf,
+                          value: next.length,
+                        });
                               if ((next?.length ?? 0) === 0) {
                                 if (onConferenceChange) {
                                   onConferenceChange('all');
@@ -159,11 +188,25 @@ export const FilterPanel = memo(function FilterPanel({
             <label className="text-sm font-medium" htmlFor="year-select">Year</label>
             <Select 
               value={selectedYear?.toString()}
-              onValueChange={(value) => {
-                if (value === 'all') return onYearChange(undefined);
-                const n = parseInt(value, 10);
-                onYearChange(Number.isNaN(n) ? undefined : n);
-              }}
+                onValueChange={(value) => {
+                  if (value === 'all') {
+                    onYearChange(undefined);
+                    trackEvent({
+                      action: "filter_year_change",
+                      category: "filters",
+                      label: "all",
+                    });
+                    return;
+                  }
+                  const n = parseInt(value, 10);
+                  const nextYear = Number.isNaN(n) ? undefined : n;
+                  onYearChange(nextYear);
+                  trackEvent({
+                    action: "filter_year_change",
+                    category: "filters",
+                    label: nextYear ? nextYear.toString() : "all",
+                  });
+                }}
               aria-label="Select year filter"
             >
               <SelectTrigger>

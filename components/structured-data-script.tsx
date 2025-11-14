@@ -156,4 +156,3 @@ export function StructuredDataScript() {
 
   return null
 }
-

@@ -50,6 +50,78 @@ The Gini-Simpson Index measures diversity from 0 (homogeneous) to 1 (highly dive
 ### Committee vs Papers Gap
 The representation gap is calculated as Committee % minus Papers % for each continent. A positive gap indicates committee over-representation.
 
+## Analytics & Instrumentation
+
+The live deployment wires Google Analytics 4 (`gtag.js`, ID provided via `NEXT_PUBLIC_GA_MEASUREMENT_ID`). Beyond page views, the UI emits rich interaction events so we can understand how each dashboard is used:
+
+- **Global navigation:** every client-side route change triggers a pageview.
+- **Filters:** conference multi-select, year dropdowns and quick actions fire events when options are toggled, cleared, or set to “all”.
+- **Geo toggles:** continent/country switches on dashboards (Accepted Papers, Program Committee, main overview) log the chosen mode and active filters.
+- **Big Tech vs Academia:** records sort order, top-N selection, conference/year filters, and aggregate vs all-series mode.
+- **Asian Trends:** tracks conference search queries (on blur), top-k buttons, view mode switches, reset actions, and manual conference selection/removal.
+- **Country Ranking & Country Analysis:** search input, tab/mode changes, country filters, visibility toggles, focus changes, and year-range adjustments generate events with context (selection size, mode, etc.).
+- **Committee vs Papers & Diversity views:** log continent selection, year-range presets/custom ranges, and aggregate-vs-all switches.
+
+Events are only sent when `window.gtag` exists (i.e., GA is correctly initialised), preventing errors during local development. Check GA4 Realtime to verify instrumentation after deploying with the measurement ID.
+
+## Development
+
+### Prerequisites
+- Node.js 18+ and npm
+
+### Installation
+```bash
+npm install
+```
+
+### Running Locally
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) to view the application.
+
+### Building for Production
+```bash
+npm run build
+```
+
+The static export will be generated in the `out/` directory.
+
+## Deployment
+
+### Vercel (Recommended)
+1. Push your code to GitHub
+2. Import the repository in Vercel
+3. Deploy automatically
+
+### GitHub Pages
+1. Set environment variables:
+   ```
+   GITHUB_PAGES=true
+   GITHUB_REPOSITORY=username/repo-name
+   ```
+2. Build:
+   ```bash
+   npm run build:gh-pages
+   ```
+3. Deploy the `out/` directory to GitHub Pages
+
+### Static Hosting (Netlify, Cloudflare Pages, etc.)
+1. Build the project:
+   ```bash
+   npm run build
+   ```
+2. Deploy the `out/` directory
+
+## Environment Variables
+
+Create a `.env.local` file based on `env.example`:
+```
+NEXT_PUBLIC_BASE_URL=https://yourdomain.com
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+```
+
 ## About
 
 This visualization tool was created to help understand trends and patterns in academic conference participation. For questions or feedback, visit the [GitHub repository](https://github.com/Marina-LA/ConferenceData).

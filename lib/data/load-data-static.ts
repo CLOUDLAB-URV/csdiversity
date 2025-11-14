@@ -6,9 +6,13 @@ import { processContinentDistribution, processCommitteeContinentDistribution, ty
 const DATASET_TO_FILENAME: Record<string, string> = {
   papers: 'unifiedPaperData.csv',
   committee: 'unifiedCommitteeData.csv',
+  'papers-country': 'unifiedPaperCountryData.csv',
+  'committee-country': 'unifiedCommitteeCountryData.csv',
 };
 
-export async function loadDatasetStatic(dataset: 'papers' | 'committee'): Promise<any[]> {
+export type SupportedDatasetKey = 'papers' | 'committee' | 'papers-country' | 'committee-country';
+
+export async function loadDatasetStatic(dataset: SupportedDatasetKey): Promise<any[]> {
   const filename = DATASET_TO_FILENAME[dataset];
 
   if (!filename) {
@@ -45,4 +49,3 @@ export async function loadDatasetStatic(dataset: 'papers' | 'committee'): Promis
 }
 
 export { processContinentDistribution, processCommitteeContinentDistribution, type ContinentDistributionItem };
-

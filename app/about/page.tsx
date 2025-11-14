@@ -215,6 +215,7 @@ export default function AboutPage() {
               Research group:
             </p>
             <div className="flex items-center gap-3 mb-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
                 src={`${basePath}/Logo_CloudLab.png`}
                 alt="CloudLab Logo" 
@@ -294,4 +295,3 @@ export default function AboutPage() {
     </div>
   );
 }
-

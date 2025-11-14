@@ -45,4 +45,3 @@ export function Header({ onMenuClick }: HeaderProps) {
     </header>
   );
 }
-

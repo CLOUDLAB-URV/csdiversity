@@ -4,7 +4,7 @@ import Link from "next/link";
 import { loadDatasetStatic } from "@/lib/data/load-data-static";
 import { processContinentDistribution, processAsianTrends, processBigTech } from "@/lib/data/load-data";
 import type { Metadata } from "next";
-import { Globe2, TrendingUp, Building2, Users, Info, UserCheck } from "lucide-react";
+import { Globe2, TrendingUp, Building2, Users, Info, UserCheck, BarChart3 } from "lucide-react";
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
@@ -91,10 +91,18 @@ const navItems = [
     icon: Info,
     gradient: "from-gray-500 to-slate-500",
   },
+  {
+    title: "Country Ranking",
+    description: "View overall country ranking and search for specific positions",
+    href: "/country-ranking",
+    icon: BarChart3,
+    gradient: "from-teal-500 to-emerald-500",
+  },
 ];
 
 export default async function Dashboard() {
   const papersRaw = await loadDatasetStatic('papers');
+  const papersCountryRaw = await loadDatasetStatic('papers-country');
 
   const continentData = processContinentDistribution(papersRaw);
   const asianTrends = processAsianTrends(papersRaw);
@@ -120,7 +128,12 @@ export default async function Dashboard() {
 
       <QuickStats totalPapers={totalPapers} yearRange={yearRange} numConfs={numConfs} />
 
-      <StatsGrid continentData={continentData} asianTrends={asianTrends} bigTechData={bigTechData} />
+      <StatsGrid
+        continentData={continentData}
+        asianTrends={asianTrends}
+        bigTechData={bigTechData}
+        papersCountryRaw={papersCountryRaw}
+      />
 
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold tracking-tight">Explore Analysis</h2>
@@ -158,4 +171,3 @@ export default async function Dashboard() {
     </div>
   );
 }
-

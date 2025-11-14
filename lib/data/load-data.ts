@@ -28,6 +28,31 @@ const normalizeConferenceName = (conf: string): string => {
   return conferenceMap[normalized] || normalized;
 };
 
+export const normalizeCountryName = (country: string): string => {
+  const trimmed = String(country ?? '').trim();
+  if (!trimmed) return trimmed;
+  
+  const normalized = trimmed.toUpperCase();
+  const countryMap: Record<string, string> = {
+    'USA': 'United States',
+    'US': 'United States',
+    'U.S.': 'United States',
+    'U.S.A.': 'United States',
+    'UNITED STATES OF AMERICA': 'United States',
+    'UK': 'United Kingdom',
+    'U.K.': 'United Kingdom',
+    'GREAT BRITAIN': 'United Kingdom',
+    'KOREA': 'South Korea',
+    'REPUBLIC OF KOREA': 'South Korea',
+    'KOREA, REPUBLIC OF': 'South Korea',
+    'PEOPLES REPUBLIC OF CHINA': 'China',
+    "PEOPLE'S REPUBLIC OF CHINA": 'China',
+    'PRC': 'China',
+  };
+  
+  return countryMap[normalized] || trimmed;
+};
+
 const normalizeContinentForDistribution = (c: string): string | null => {
   const val = String(c ?? '').trim().toUpperCase();
   if (!val) return null;
@@ -732,4 +757,341 @@ export function processDiversity(papersRaw: any[], committeeRaw: any[]): Diversi
   }
 
   return result.sort((a, b) => a.conference.localeCompare(b.conference));
+}
+
+// Country-level analysis types and functions
+export interface CommitteeVsPapersCountryItem {
+  conference: string;
+  country: string;
+  papersPercent: number;
+  committeePercent: number;
+  gap: number;
+}
+
+export interface CommitteeVsPapersByYearCountryItem {
+  conference: string;
+  year: number;
+  country: string;
+  papersPercent: number;
+  committeePercent: number;
+  gap: number;
+}
+
+// Helper to parse countries from a row
+function parseCountriesFromRow(row: any): string[] {
+  const candidates = [
+    row?.Countries,
+    row?.countries,
+    row?.Country,
+    row?.country,
+  ];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) {
+      const normalized = candidate
+        .map((value) => String(value ?? '').trim())
+        .filter(Boolean);
+      if (normalized.length > 0) {
+        return normalized;
+      }
+      continue;
+    }
+
+    if (typeof candidate === 'string') {
+      const cleaned = candidate.trim();
+      if (!cleaned) continue;
+      const parts = cleaned
+        .replace(/\r?\n/g, ' ')
+        .split(';')
+        .map(part => part.trim())
+        .filter(Boolean);
+      if (parts.length > 0) {
+        return parts;
+      }
+    }
+  }
+
+  return [];
+}
+
+export function calculateTopCountries(
+  papersRaw: any[],
+  committeeRaw: any[],
+  options: { limit?: number } = {}
+): string[] {
+  const { limit = 20 } = options;
+  const countryCounts = new Map<string, number>();
+
+  // Count from papers
+  for (const row of papersRaw) {
+    const countries = parseCountriesFromRow(row);
+    for (const country of countries) {
+      const normalized = normalizeCountryName(country);
+      if (normalized && normalized !== 'Unknown' && normalized !== 'Other') {
+        countryCounts.set(normalized, (countryCounts.get(normalized) ?? 0) + 1);
+      }
+    }
+  }
+
+  // Count from committee
+  for (const row of committeeRaw) {
+    const countries = parseCountriesFromRow(row);
+    for (const country of countries) {
+      const normalized = normalizeCountryName(country);
+      if (normalized && normalized !== 'Unknown' && normalized !== 'Other') {
+        countryCounts.set(normalized, (countryCounts.get(normalized) ?? 0) + 1);
+      }
+    }
+  }
+
+  // Sort by count descending and take top N
+  return Array.from(countryCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([country]) => country);
+}
+
+export function processCommitteeVsPapersCountry(
+  papersRaw: any[],
+  committeeRaw: any[],
+  options: {
+    focusCountries?: string[];
+    includeOtherBucket?: boolean;
+    includeUnknownBucket?: boolean;
+  } = {}
+): { data: CommitteeVsPapersCountryItem[]; countries: string[] } {
+  const { focusCountries = [], includeOtherBucket = false, includeUnknownBucket = false } = options;
+
+  const focusSet = new Set(focusCountries.map(c => normalizeCountryName(c)));
+  const allCountries = new Set<string>();
+
+  // Helper to categorize country
+  const categorizeCountry = (country: string): string => {
+    const normalized = normalizeCountryName(country);
+    if (focusCountries.length > 0) {
+      if (focusSet.has(normalized)) {
+        return normalized;
+      }
+      if (!normalized || normalized === 'Unknown') {
+        return includeUnknownBucket ? 'Unknown' : '';
+      }
+      return includeOtherBucket ? 'Other' : '';
+    }
+    return normalized;
+  };
+
+  const papersByConf = new Map<string, Map<string, number>>();
+  for (const r of papersRaw) {
+    const conf = normalizeConferenceName(r.conference ?? r.Conference ?? '');
+    if (!conf) continue;
+    const countries = parseCountriesFromRow(r);
+    if (countries.length === 0) continue;
+
+    const categorized = countries
+      .map(c => categorizeCountry(c))
+      .filter(c => c !== '');
+    
+    const uniqueCategories = Array.from(new Set(categorized));
+    if (uniqueCategories.length === 0) continue;
+    
+    const weight = 1 / uniqueCategories.length;
+    
+    if (!papersByConf.has(conf)) papersByConf.set(conf, new Map());
+    const contMap = papersByConf.get(conf)!;
+    
+    for (const category of uniqueCategories) {
+      allCountries.add(category);
+      contMap.set(category, (contMap.get(category) ?? 0) + weight);
+    }
+  }
+
+  const committeeByConf = new Map<string, Map<string, number>>();
+  for (const r of committeeRaw) {
+    const conf = normalizeConferenceName(r.conference ?? r.Conference ?? '');
+    if (!conf) continue;
+    const countries = parseCountriesFromRow(r);
+    if (countries.length === 0) continue;
+
+    const categorized = countries
+      .map(c => categorizeCountry(c))
+      .filter(c => c !== '');
+    
+    const uniqueCategories = Array.from(new Set(categorized));
+    if (uniqueCategories.length === 0) continue;
+    
+    const weight = 1 / uniqueCategories.length;
+    
+    if (!committeeByConf.has(conf)) committeeByConf.set(conf, new Map());
+    const contMap = committeeByConf.get(conf)!;
+    
+    for (const category of uniqueCategories) {
+      allCountries.add(category);
+      contMap.set(category, (contMap.get(category) ?? 0) + weight);
+    }
+  }
+
+  const allConfs = new Set([...papersByConf.keys(), ...committeeByConf.keys()]);
+  const result: CommitteeVsPapersCountryItem[] = [];
+
+  const countryList = Array.from(allCountries).sort();
+
+  for (const conf of allConfs) {
+    const pMap = papersByConf.get(conf) ?? new Map();
+    const cMap = committeeByConf.get(conf) ?? new Map();
+    
+    const pTotal = Array.from(pMap.values()).reduce((s, v) => s + v, 0);
+    const cTotal = Array.from(cMap.values()).reduce((s, v) => s + v, 0);
+
+    if (pTotal === 0 && cTotal === 0) {
+      continue;
+    }
+
+    for (const country of countryList) {
+      const pCount = pMap.get(country) ?? 0;
+      const cCount = cMap.get(country) ?? 0;
+      
+      const pPct = pTotal > 0 ? Number(((pCount / pTotal) * 100).toFixed(2)) : 0;
+      const cPct = cTotal > 0 ? Number(((cCount / cTotal) * 100).toFixed(2)) : 0;
+      const gap = Number((cPct - pPct).toFixed(2));
+
+      result.push({
+        conference: conf,
+        country,
+        papersPercent: pPct,
+        committeePercent: cPct,
+        gap,
+      });
+    }
+  }
+
+  return {
+    data: result.sort((a, b) => a.conference.localeCompare(b.conference) || a.country.localeCompare(b.country)),
+    countries: countryList,
+  };
+}
+
+export function processCommitteeVsPapersByYearCountry(
+  papersRaw: any[],
+  committeeRaw: any[],
+  options: {
+    focusCountries?: string[];
+    includeOtherBucket?: boolean;
+    includeUnknownBucket?: boolean;
+  } = {}
+): { data: CommitteeVsPapersByYearCountryItem[]; countries: string[] } {
+  const { focusCountries = [], includeOtherBucket = false, includeUnknownBucket = false } = options;
+
+  const focusSet = new Set(focusCountries.map(c => normalizeCountryName(c)));
+  const allCountries = new Set<string>();
+
+  // Helper to categorize country
+  const categorizeCountry = (country: string): string => {
+    const normalized = normalizeCountryName(country);
+    if (focusCountries.length > 0) {
+      if (focusSet.has(normalized)) {
+        return normalized;
+      }
+      if (!normalized || normalized === 'Unknown') {
+        return includeUnknownBucket ? 'Unknown' : '';
+      }
+      return includeOtherBucket ? 'Other' : '';
+    }
+    return normalized;
+  };
+
+  const papersByConfYear = new Map<string, Map<string, number>>();
+  for (const r of papersRaw) {
+    const conf = normalizeConferenceName(r.conference ?? r.Conference ?? '');
+    const year = Number(r.year ?? r.Year);
+    if (!conf || !Number.isFinite(year)) continue;
+    const countries = parseCountriesFromRow(r);
+    if (countries.length === 0) continue;
+
+    const categorized = countries
+      .map(c => categorizeCountry(c))
+      .filter(c => c !== '');
+    
+    const uniqueCategories = Array.from(new Set(categorized));
+    if (uniqueCategories.length === 0) continue;
+    
+    const weight = 1 / uniqueCategories.length;
+    const key = `${conf}:${year}`;
+    
+    if (!papersByConfYear.has(key)) papersByConfYear.set(key, new Map());
+    const contMap = papersByConfYear.get(key)!;
+    
+    for (const category of uniqueCategories) {
+      allCountries.add(category);
+      contMap.set(category, (contMap.get(category) ?? 0) + weight);
+    }
+  }
+
+  const committeeByConfYear = new Map<string, Map<string, number>>();
+  for (const r of committeeRaw) {
+    const conf = normalizeConferenceName(r.conference ?? r.Conference ?? '');
+    const year = Number(r.year ?? r.Year);
+    if (!conf || !Number.isFinite(year)) continue;
+    const countries = parseCountriesFromRow(r);
+    if (countries.length === 0) continue;
+
+    const categorized = countries
+      .map(c => categorizeCountry(c))
+      .filter(c => c !== '');
+    
+    const uniqueCategories = Array.from(new Set(categorized));
+    if (uniqueCategories.length === 0) continue;
+    
+    const weight = 1 / uniqueCategories.length;
+    const key = `${conf}:${year}`;
+    
+    if (!committeeByConfYear.has(key)) committeeByConfYear.set(key, new Map());
+    const contMap = committeeByConfYear.get(key)!;
+    
+    for (const category of uniqueCategories) {
+      allCountries.add(category);
+      contMap.set(category, (contMap.get(category) ?? 0) + weight);
+    }
+  }
+
+  const allKeys = new Set([...papersByConfYear.keys(), ...committeeByConfYear.keys()]);
+  const result: CommitteeVsPapersByYearCountryItem[] = [];
+
+  const countryList = Array.from(allCountries).sort();
+
+  for (const key of allKeys) {
+    const [conf, yearStr] = key.split(':');
+    const year = Number(yearStr);
+    const pMap = papersByConfYear.get(key) ?? new Map();
+    const cMap = committeeByConfYear.get(key) ?? new Map();
+    
+    const pTotal = Array.from(pMap.values()).reduce((s, v) => s + v, 0);
+    const cTotal = Array.from(cMap.values()).reduce((s, v) => s + v, 0);
+
+    if (pTotal === 0 && cTotal === 0) {
+      continue;
+    }
+
+    for (const country of countryList) {
+      const pCount = pMap.get(country) ?? 0;
+      const cCount = cMap.get(country) ?? 0;
+      
+      const pPct = pTotal > 0 ? Number(((pCount / pTotal) * 100).toFixed(2)) : 0;
+      const cPct = cTotal > 0 ? Number(((cCount / cTotal) * 100).toFixed(2)) : 0;
+      const gap = Number((cPct - pPct).toFixed(2));
+
+      result.push({
+        conference: conf,
+        year,
+        country,
+        papersPercent: pPct,
+        committeePercent: cPct,
+        gap,
+      });
+    }
+  }
+
+  return {
+    data: result.sort((a, b) => a.year - b.year || a.conference.localeCompare(b.conference) || a.country.localeCompare(b.country)),
+    countries: countryList,
+  };
 }

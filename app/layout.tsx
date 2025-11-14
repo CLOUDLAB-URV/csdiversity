@@ -4,10 +4,12 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { StructuredDataScript } from "@/components/structured-data-script";
 import { LayoutClient } from "@/components/layout/layout-client";
+import Script from "next/script";
 
 const inter = Inter({ subsets: ["latin"] });
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 export const metadata: Metadata = {
   title: {
@@ -135,6 +137,24 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
+        {GA_ID ? (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="gtag-init" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${GA_ID}', {
+                  page_path: window.location.pathname,
+                });
+              `}
+            </Script>
+          </>
+        ) : null}
         <StructuredDataScript />
         <ThemeProvider defaultTheme="system" storageKey="conference-visualizer-theme">
           <LayoutClient>
@@ -145,4 +165,3 @@ export default function RootLayout({
     </html>
   );
 }
-

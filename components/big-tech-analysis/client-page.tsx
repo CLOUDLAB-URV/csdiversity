@@ -8,6 +8,7 @@ import { ChartContainer } from "@/components/charts/chart-container";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, Brush, ComposedChart, Area } from "recharts";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { trackEvent } from "@/lib/analytics";
 
 const ChartSkeleton = () => (
   <div className="h-[600px] w-full space-y-4 p-4">
@@ -60,18 +61,47 @@ export function ClientBigTechAnalysisPage({ initialData, initialDataByRegion }: 
   const handleConferencesChange = useCallback((list: string[]) => {
     setSelectedConferences(list);
     if (list.length > 0) setMode('all');
+    trackEvent({
+      action: "bigtech_filter_conferences",
+      category: "bigtech",
+      value: list.length,
+    });
   }, []);
   
   const handleTopNChange = useCallback((value: number | 'all') => {
     setTopN(value);
+    trackEvent({
+      action: "bigtech_topn_change",
+      category: "bigtech",
+      label: value === 'all' ? 'all' : value.toString(),
+    });
   }, []);
   
   const handleSortOrderChange = useCallback((value: 'desc' | 'asc') => {
     setSortOrder(value);
+    trackEvent({
+      action: "bigtech_sort_order_change",
+      category: "bigtech",
+      label: value,
+    });
   }, []);
   
   const handleModeChange = useCallback((value: 'all' | 'aggregate') => {
     setMode(value);
+    trackEvent({
+      action: "bigtech_mode_change",
+      category: "bigtech",
+      label: value,
+    });
+  }, []);
+
+  const handleYearChange = useCallback((year: number | undefined) => {
+    setSelectedYear(year);
+    trackEvent({
+      action: "bigtech_year_change",
+      category: "bigtech",
+      label: year ? year.toString() : "all",
+    });
   }, []);
   
   const filteredData = useMemo(() => {
@@ -272,6 +302,8 @@ export function ClientBigTechAnalysisPage({ initialData, initialDataByRegion }: 
       return rows;
     }
   }, [filteredDataByRegion, sortOrder, topN, selectedConferences, selectedYear]);
+  const isSingleConferenceView = selectedConferences.length === 1 && !selectedYear;
+
 
   const { evolutionData, evolutionConfs, aggregateEvolutionData } = useMemo(() => {
     const confs = selectedConferences.length > 0 
@@ -392,7 +424,7 @@ export function ClientBigTechAnalysisPage({ initialData, initialDataByRegion }: 
             conferences={conferences}
             years={years as number[]}
             selectedYear={selectedYear}
-            onYearChange={setSelectedYear}
+            onYearChange={handleYearChange}
             selectedConferences={selectedConferences}
             onConferencesChange={handleConferencesChange}
           />
@@ -491,7 +523,13 @@ export function ClientBigTechAnalysisPage({ initialData, initialDataByRegion }: 
                     aria-label={`Big Tech vs Academia breakdown ${selectedConferences.length > 0 ? `for selected conferences` : selectedYear ? `for ${selectedYear}` : ''}`}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.3} />
-                    <XAxis dataKey="conference" tick={{ fill: '#6b7280', fontSize: 12 }} />
+                    <XAxis
+                      dataKey="conference"
+                      tick={{ fill: '#6b7280', fontSize: 12 }}
+                      angle={isSingleConferenceView ? 0 : -45}
+                      textAnchor={isSingleConferenceView ? 'middle' : 'end'}
+                      height={isSingleConferenceView ? 40 : 80}
+                    />
                     <YAxis 
                       domain={[0, 100]}
                       tick={{ fill: '#6b7280', fontSize: 12 }}
@@ -576,7 +614,13 @@ export function ClientBigTechAnalysisPage({ initialData, initialDataByRegion }: 
                     aria-label={`Big Tech by region breakdown ${selectedConferences.length > 0 ? `for selected conferences` : selectedYear ? `for ${selectedYear}` : ''}`}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.3} />
-                    <XAxis dataKey="conference" tick={{ fill: '#6b7280', fontSize: 12 }} />
+                    <XAxis
+                      dataKey="conference"
+                      tick={{ fill: '#6b7280', fontSize: 12 }}
+                      angle={isSingleConferenceView ? 0 : -45}
+                      textAnchor={isSingleConferenceView ? 'middle' : 'end'}
+                      height={isSingleConferenceView ? 40 : 80}
+                    />
                     <YAxis 
                       domain={[0, 100]}
                       tick={{ fill: '#6b7280', fontSize: 12 }}

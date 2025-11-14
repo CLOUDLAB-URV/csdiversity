@@ -14,6 +14,8 @@ import {
   UserCheck,
   X,
   UserCog,
+  BarChart3,
+  Lightbulb,
 } from "lucide-react";
 
 const navigation = [
@@ -23,7 +25,9 @@ const navigation = [
   { name: "Asian Trends", href: "/asian-trends", icon: TrendingUp, description: "Asian participation trends" },
   { name: "Big Tech vs Academia", href: "/big-tech-analysis", icon: Building2, description: "Industry vs academia" },
   { name: "Committee vs Papers", href: "/committee-analysis", icon: UserCheck, description: "Committee representation" },
+  { name: "Country Ranking", href: "/country-ranking", icon: BarChart3, description: "Global country leaderboard" },
   { name: "Diversity", href: "/diversity", icon: Users, description: "Diversity metrics" },
+  { name: "Deep Insights", href: "/insights", icon: Lightbulb, description: "Collaboration & influence" },
   { name: "About", href: "/about", icon: Info, description: "About this project" },
 ];
 
@@ -55,7 +59,9 @@ export function Sidebar({ mobileMenuOpen, setMobileMenuOpen }: SidebarProps) {
             <ul role="list" className="flex flex-1 flex-col gap-y-1">
               {navigation.map((item) => {
                 const Icon = item.icon;
-                const isActive = pathname === item.href;
+                const isActive =
+                  pathname === item.href ||
+                  (item.href !== "/" && pathname.startsWith(item.href + "/"));
                 return (
                   <li key={item.name}>
                     <Link
@@ -127,7 +133,9 @@ export function Sidebar({ mobileMenuOpen, setMobileMenuOpen }: SidebarProps) {
               <ul role="list" className="flex flex-1 flex-col gap-y-1.5">
                 {navigation.map((item) => {
                   const Icon = item.icon;
-                  const isActive = pathname === item.href;
+                  const isActive =
+                    pathname === item.href ||
+                    (item.href !== "/" && pathname.startsWith(item.href + "/"));
                   return (
                     <li key={item.name}>
                       <Link
@@ -173,4 +181,3 @@ export function Sidebar({ mobileMenuOpen, setMobileMenuOpen }: SidebarProps) {
     </>
   );
 }
-

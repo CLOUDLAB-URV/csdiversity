@@ -7,6 +7,7 @@ import type { DiversityData } from "@/lib/data/load-data";
 import { processDiversity } from "@/lib/data/load-data";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
+import { trackEvent } from "@/lib/analytics";
 
 const ChartSkeleton = () => (
   <div className="h-[400px] w-full space-y-4 p-4">
@@ -49,6 +50,11 @@ export const ClientDiversityPage = memo(function ClientDiversityPage({ initialDa
 
   const handleYearRangeChange = useCallback((range: [number, number]) => {
     setYearRange(range);
+    trackEvent({
+      action: "diversity_year_range_change",
+      category: "diversity",
+      label: `${range[0]}-${range[1]}`,
+    });
   }, []);
 
   const filteredDiversityData = useMemo(() => {

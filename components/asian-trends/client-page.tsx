@@ -7,6 +7,7 @@ import type { AsianTrendItem } from "@/lib/data/load-data";
 import { ChartContainer } from "@/components/charts/chart-container";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, BarChart, Bar, ComposedChart, Area } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
+import { trackEvent } from "@/lib/analytics";
 
 const ChartSkeleton = () => (
   <div className="h-[600px] w-full space-y-4 p-4">
@@ -77,22 +78,54 @@ export function ClientAsianTrendsPage({ initialData }: ClientAsianTrendsPageProp
     return topN !== 'all' ? list.slice(0, topN) : list;
   }, [conferences, conferenceQuery, topN, selectedConferences, confAverages]);
   
-  const handleConferencesChange = useCallback((list: string[]) => {
+  const updateSelectedConferences = useCallback((list: string[], source: string) => {
     setSelectedConferences(list);
-    setMode(list.length > 0 ? 'all' : 'aggregate');
+    const nextMode = list.length > 0 ? 'all' : 'aggregate';
+    setMode(nextMode);
+    trackEvent({
+      action: "asian_conference_selection",
+      category: "asian_trends",
+      label: source,
+      value: list.length,
+      params: { mode: nextMode },
+    });
   }, []);
+  
+  const handleConferencesChange = useCallback((list: string[]) => {
+    updateSelectedConferences(list, "filter_panel");
+  }, [updateSelectedConferences]);
   
   const handleQueryChange = useCallback((value: string) => {
     setConferenceQuery(value);
   }, []);
   
+  const handleQueryBlur = useCallback(() => {
+    trackEvent({
+      action: "asian_conference_search",
+      category: "asian_trends",
+      label: conferenceQuery.trim() || "(empty)",
+    });
+  }, [conferenceQuery]);
+  
   const handleTopNChange = useCallback((value: number | 'all') => {
     setTopN(value);
-  }, []);
+    trackEvent({
+      action: "asian_topn_change",
+      category: "asian_trends",
+      label: value === 'all' ? 'all' : value.toString(),
+      params: { disabled: selectedConferences.length > 0 },
+    });
+  }, [selectedConferences.length]);
   
   const handleModeChange = useCallback((newMode: 'all' | 'aggregate') => {
     setMode(newMode);
-  }, []);
+    trackEvent({
+      action: "asian_mode_change",
+      category: "asian_trends",
+      label: newMode,
+      params: { conferences: selectedConferences.length },
+    });
+  }, [selectedConferences.length]);
 
   const activeConferences = useMemo(() => {
     if (selectedConferences.length > 0) return selectedConferences;
@@ -185,10 +218,7 @@ export function ClientAsianTrendsPage({ initialData }: ClientAsianTrendsPageProp
             conferences={conferences}
             years={[]}
             selectedConferences={selectedConferences}
-            onConferencesChange={(list) => {
-              setSelectedConferences(list);
-              setMode(list.length > 0 ? 'all' : 'aggregate');
-            }}
+            onConferencesChange={handleConferencesChange}
             onYearChange={() => {}}
           />
         </div>
@@ -235,6 +265,7 @@ export function ClientAsianTrendsPage({ initialData }: ClientAsianTrendsPageProp
                   type="text"
                   value={conferenceQuery}
                   onChange={(e) => handleQueryChange(e.target.value)}
+                  onBlur={handleQueryBlur}
                   placeholder="Filter conferences by name"
                   className="w-full md:w-1/2 border rounded-md px-3 py-2 text-sm"
                 />
@@ -310,13 +341,19 @@ export function ClientAsianTrendsPage({ initialData }: ClientAsianTrendsPageProp
                           className="rounded-full w-4 h-4 flex items-center justify-center border"
                           onClick={() => {
                             const next = selectedConferences.filter(c=>c!==conf);
-                            setSelectedConferences(next);
-                            if (next.length===0) handleModeChange('aggregate');
+                            updateSelectedConferences(next, "chip_remove");
                           }}
                         >×</button>
                       </span>
                     ))}
-                    <button className="text-xs underline ml-2" onClick={() => { setSelectedConferences([]); setMode('aggregate'); }}>Reset selection</button>
+                    <button
+                      className="text-xs underline ml-2"
+                      onClick={() => {
+                        updateSelectedConferences([], "reset_selection");
+                      }}
+                    >
+                      Reset selection
+                    </button>
                   </div>
                 )}
 
@@ -326,8 +363,12 @@ export function ClientAsianTrendsPage({ initialData }: ClientAsianTrendsPageProp
                     onClick={() => { 
                       handleQueryChange(''); 
                       handleTopNChange('all'); 
-                      setSelectedConferences([]); 
+                      updateSelectedConferences([], "reset_view");
                       handleModeChange('aggregate'); 
+                      trackEvent({
+                        action: "asian_reset_view",
+                        category: "asian_trends",
+                      });
                     }}
                   >Reset view</button>
                 </div>

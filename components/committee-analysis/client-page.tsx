@@ -7,6 +7,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import type { CommitteeVsPapersItem, CommitteeVsPapersByYearItem } from "@/lib/data/load-data";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { trackEvent } from "@/lib/analytics";
 
 const ChartSkeleton = () => (
   <div className="h-[600px] w-full space-y-4 p-4">
@@ -79,6 +80,14 @@ export function ClientCommitteeAnalysisPage({
 }: ClientCommitteeAnalysisPageProps) {
   const [selectedContinent, setSelectedContinent] = useState<string>('North America');
   const [selectedContinentForEvolution, setSelectedContinentForEvolution] = useState<string>('North America');
+  const handleEvolutionContinentChange = useCallback((cont: string) => {
+    setSelectedContinentForEvolution(cont);
+    trackEvent({
+      action: "committee_evolution_continent_change",
+      category: "committee_vs_papers",
+      label: cont,
+    });
+  }, []);
   const [yearRange, setYearRange] = useState<[number, number]>(
     years.length > 0 ? [years[0], years[years.length - 1]] : [2000, 2024]
   );
@@ -88,14 +97,29 @@ export function ClientCommitteeAnalysisPage({
   
   const handleContinentChange = useCallback((cont: string) => {
     setSelectedContinent(cont);
+    trackEvent({
+      action: "committee_continent_change",
+      category: "committee_vs_papers",
+      label: cont,
+    });
   }, []);
   
   const handleYearRangeChange = useCallback((range: [number, number]) => {
     setYearRange(range);
+    trackEvent({
+      action: "committee_year_range_change",
+      category: "committee_vs_papers",
+      label: `${range[0]}-${range[1]}`,
+    });
   }, []);
   
   const handleModeChange = useCallback((newMode: 'all' | 'aggregate') => {
     setMode(newMode);
+    trackEvent({
+      action: "committee_mode_change",
+      category: "committee_vs_papers",
+      label: newMode,
+    });
   }, []);
 
   const filteredDataByYearRange = useMemo(() => {
@@ -562,7 +586,7 @@ export function ClientCommitteeAnalysisPage({
             {continents.map(continent => (
               <button
                 key={continent}
-                onClick={() => setSelectedContinentForEvolution(continent)}
+                onClick={() => handleEvolutionContinentChange(continent)}
                 className={`px-4 py-2 text-sm font-medium transition-all duration-200 border-b-2 ${
                   selectedContinentForEvolution === continent
                     ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'

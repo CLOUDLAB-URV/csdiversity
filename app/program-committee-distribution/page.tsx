@@ -40,11 +40,19 @@ export const metadata: Metadata = {
 
 export default async function ProgramCommitteeDistributionPage() {
   const rawData = await loadDatasetStatic('committee');
+  const countryRawData = await loadDatasetStatic('committee-country');
   const allData = processCommitteeContinentDistribution(rawData);
   
   const conferences = Array.from(new Set(allData.map(d => d.conference))).sort();
   const years = Array.from(new Set(allData.map(d => d.year))).sort((a, b) => a - b);
 
-  return <ClientProgramCommitteeDistributionPage initialData={allData} conferences={conferences} years={years} />;
+  return (
+    <ClientProgramCommitteeDistributionPage
+      initialData={allData}
+      conferences={conferences}
+      years={years}
+      committeeCountryRaw={countryRawData}
+    />
+  );
 }
 

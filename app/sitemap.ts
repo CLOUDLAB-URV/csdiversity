@@ -44,6 +44,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
     },
     {
+      route: '/country-ranking',
+      priority: 0.9,
+      changeFrequency: 'monthly',
+    },
+    {
+      route: '/country-analysis',
+      priority: 0.9,
+      changeFrequency: 'monthly',
+    },
+    {
+      route: '/insights',
+      priority: 0.8,
+      changeFrequency: 'monthly',
+    },
+    {
       route: '/about',
       priority: 0.7,
       changeFrequency: 'monthly',
@@ -62,5 +77,4 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   }))
 }
-
 

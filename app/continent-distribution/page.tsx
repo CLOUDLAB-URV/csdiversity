@@ -39,10 +39,18 @@ export const metadata: Metadata = {
 
 export default async function ContinentDistributionPage() {
   const rawData = await loadDatasetStatic('papers');
+  const countryRawData = await loadDatasetStatic('papers-country');
   const allData = processContinentDistribution(rawData);
   
   const conferences = Array.from(new Set(allData.map(d => d.conference))).sort();
   const years = Array.from(new Set(allData.map(d => d.year))).sort((a, b) => a - b);
 
-  return <ClientContinentDistributionPage initialData={allData} conferences={conferences} years={years} />;
+  return (
+    <ClientContinentDistributionPage
+      initialData={allData}
+      conferences={conferences}
+      years={years}
+      papersCountryRaw={countryRawData}
+    />
+  );
 }
