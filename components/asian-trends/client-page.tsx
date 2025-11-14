@@ -406,8 +406,8 @@ export function ClientAsianTrendsPage({ initialData }: ClientAsianTrendsPageProp
                       <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} label={{ value: 'Mean ± SD (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#6b7280' } }} />
                       <Tooltip contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.98)', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', padding: '12px' }} />
                       <Brush dataKey="year" height={20} travellerWidth={8} />
-                      <Area type="monotone" dataKey="upper" stroke="transparent" fill="#1681c5" fillOpacity={0.12} />
-                      <Area type="monotone" dataKey="lower" stroke="transparent" fill="#ffffff" fillOpacity={1} />
+                      <Area type="monotone" dataKey="upper" stroke="transparent" fill="#1681c5" fillOpacity={0.2} />
+                      <Area type="monotone" dataKey="lower" stroke="transparent" fill="hsl(var(--background))" fillOpacity={1} />
                       <Line type="monotone" dataKey="mean" stroke="#1f3b6f" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 6 }} />
                     </ComposedChart>
                   )}
