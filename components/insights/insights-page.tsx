@@ -15,6 +15,9 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -137,6 +140,76 @@ export function InsightsPage({
 
     return entries;
   }, [paperCountryRows]);
+
+  const collaborationEvolution = useMemo(() => {
+    // Get top 5 pairs overall
+    const top5Pairs = topCountryPairs.slice(0, 5).map(p => p.countries.join("|||"));
+    
+    // Count papers per year for each top pair AND total multi-country papers
+    const yearPairCounts = new Map<number, Map<string, number>>();
+    const yearTotalMulti = new Map<number, number>();
+    
+    for (const row of paperCountryRows) {
+      const year = Number(row.year ?? row.Year);
+      if (!Number.isFinite(year)) continue;
+      
+      const countries = Array.from(
+        new Set(parseCountries(row.Countries ?? row.countries ?? row.Country ?? row.country))
+      );
+      if (countries.length < 2) continue;
+      
+      // Count total multi-country papers
+      yearTotalMulti.set(year, (yearTotalMulti.get(year) ?? 0) + 1);
+      
+      // Get all unique pairs in this paper
+      const pairsInPaper = new Set<string>();
+      for (let i = 0; i < countries.length; i++) {
+        for (let j = i + 1; j < countries.length; j++) {
+          const a = countries[i];
+          const b = countries[j];
+          if (!a || !b) continue;
+          const pair = [a, b].sort();
+          const key = pair.join("|||");
+          if (top5Pairs.includes(key)) {
+            pairsInPaper.add(key);
+          }
+        }
+      }
+      
+      // Count this paper for each unique pair it contains
+      if (pairsInPaper.size > 0) {
+        if (!yearPairCounts.has(year)) {
+          yearPairCounts.set(year, new Map());
+        }
+        const yearMap = yearPairCounts.get(year)!;
+        
+        // Each paper counts as 1 for each pair it contains
+        for (const pairKey of pairsInPaper) {
+          yearMap.set(pairKey, (yearMap.get(pairKey) ?? 0) + 1);
+        }
+      }
+    }
+    
+    // Convert to chart data
+    const allYears = new Set([...yearPairCounts.keys(), ...yearTotalMulti.keys()]);
+    const years = Array.from(allYears).sort((a, b) => a - b);
+    
+    return years.map(year => {
+      const yearMap = yearPairCounts.get(year) ?? new Map();
+      const dataPoint: any = { 
+        year,
+        "Total Multi-Country": yearTotalMulti.get(year) ?? 0
+      };
+      
+      top5Pairs.forEach(pairKey => {
+        const [a, b] = pairKey.split("|||");
+        const pairLabel = `${a} ↔ ${b}`;
+        dataPoint[pairLabel] = yearMap.get(pairKey) ?? 0;
+      });
+      
+      return dataPoint;
+    });
+  }, [paperCountryRows, topCountryPairs]);
 
   const { turnoverSeries, tenureBuckets, topVeterans } = useMemo(() => {
     const sortedRows = [...committeeRows].sort((a, b) => {
@@ -283,6 +356,75 @@ export function InsightsPage({
                 </tbody>
               </table>
             </ScrollArea>
+          </CardContent>
+        </Card>
+
+        <Card className="border-none shadow-xl lg:col-span-2">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl font-semibold">Collaboration Evolution Over Time</CardTitle>
+            <CardDescription>
+              Number of papers per year containing each of the top 5 country pair collaborations. The dashed line shows the total number of multi-country papers (baseline for comparison). In 2024: 41 multi-country papers total.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={{}} className="h-[400px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={collaborationEvolution}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.4} />
+                  <XAxis
+                    dataKey="year"
+                    tick={{ fill: "#6b7280", fontSize: 12 }}
+                    allowDecimals={false}
+                    label={{ value: "Year", position: "insideBottom", offset: -10, fill: "#6b7280", fontSize: 13, fontWeight: 500 }}
+                  />
+                  <YAxis 
+                    scale="log"
+                    domain={[1, 'auto']}
+                    tick={{ fill: "#6b7280", fontSize: 12 }}
+                    label={{ value: "Number of Papers (log scale)", angle: -90, position: "insideLeft", fill: "#6b7280", fontSize: 13, fontWeight: 500 }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "rgba(255, 255, 255, 0.98)",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "8px",
+                      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                      padding: "12px"
+                    }}
+                  />
+                  <Legend 
+                    wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }}
+                    iconType="line"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="Total Multi-Country"
+                    stroke="#94a3b8"
+                    strokeWidth={3}
+                    strokeDasharray="5 5"
+                    dot={{ fill: "#94a3b8", r: 4 }}
+                    activeDot={{ r: 7 }}
+                  />
+                  {topCountryPairs.slice(0, 5).map((entry, idx) => {
+                    const colors = ["#1f3b6f", "#22c55e", "#ef4444", "#f59e0b", "#8b5cf6"];
+                    return (
+                      <Line
+                        key={entry.pair}
+                        type="monotone"
+                        dataKey={entry.pair}
+                        stroke={colors[idx]}
+                        strokeWidth={2.5}
+                        dot={{ fill: colors[idx], r: 3 }}
+                        activeDot={{ r: 6 }}
+                      />
+                    );
+                  })}
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartContainer>
           </CardContent>
         </Card>
 
