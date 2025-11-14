@@ -218,10 +218,13 @@ export function InsightsPage({
       return yearA - yearB;
     });
 
+    // Deduplicate: same person in multiple conferences same year = count once
+    const uniquePersonYears = new Map<string, Set<string>>(); // person -> set of years
     const seenByConference = new Map<string, Set<string>>();
     const yearBuckets = new Map<number, { newcomers: number; returning: number }>();
-    const personAppearances = new Map<string, { name: string; count: number }>();
+    const personYearConfs = new Map<string, Set<string>>(); // person+year -> conferences
 
+    // First pass: collect unique person-year combinations
     for (const row of sortedRows) {
       const name = String(row.name ?? row.Name ?? "").trim();
       const conference = normalizeConference(row.conference ?? row.Conference ?? "");
@@ -229,23 +232,44 @@ export function InsightsPage({
       if (!name || !conference || !Number.isFinite(year)) continue;
 
       const nameKey = name.toLowerCase();
+      const personYearKey = `${nameKey}|${year}`;
+      
+      // Track conferences for this person-year
+      if (!personYearConfs.has(personYearKey)) {
+        personYearConfs.set(personYearKey, new Set());
+      }
+      personYearConfs.get(personYearKey)!.add(conference);
+    }
 
-      const confSet = seenByConference.get(conference) ?? new Set<string>();
+    // Second pass: count unique person-years (deduplicated)
+    for (const [personYearKey, conferences] of personYearConfs.entries()) {
+      const [nameKey, yearStr] = personYearKey.split('|');
+      const year = Number(yearStr);
+      
+      // Track which years this person has appeared
+      if (!uniquePersonYears.has(nameKey)) {
+        uniquePersonYears.set(nameKey, new Set());
+      }
+      uniquePersonYears.get(nameKey)!.add(yearStr);
+
       const bucket = yearBuckets.get(year) ?? { newcomers: 0, returning: 0 };
-
-      if (confSet.has(nameKey)) {
+      
+      // Check if person appeared in ANY conference in prior years
+      let isReturning = false;
+      for (const prevYearStr of uniquePersonYears.get(nameKey) ?? []) {
+        if (Number(prevYearStr) < year) {
+          isReturning = true;
+          break;
+        }
+      }
+      
+      if (isReturning) {
         bucket.returning += 1;
       } else {
         bucket.newcomers += 1;
-        confSet.add(nameKey);
-        seenByConference.set(conference, confSet);
       }
 
       yearBuckets.set(year, bucket);
-      personAppearances.set(nameKey, {
-        name,
-        count: (personAppearances.get(nameKey)?.count ?? 0) + 1,
-      });
     }
 
     const turnoverSeries: TurnoverEntry[] = Array.from(yearBuckets.entries())
@@ -255,6 +279,20 @@ export function InsightsPage({
         newcomers,
         returning,
       }));
+
+    // Build tenure histogram from unique person-years
+    const personAppearances = new Map<string, { name: string; count: number }>();
+    for (const [nameKey, years] of uniquePersonYears.entries()) {
+      // Find the original name (with proper capitalization) from the first row
+      const originalName = sortedRows.find(r => 
+        String(r.name ?? r.Name ?? "").trim().toLowerCase() === nameKey
+      )?.name ?? nameKey;
+      
+      personAppearances.set(nameKey, {
+        name: originalName,
+        count: years.size  // Count unique years
+      });
+    }
 
     const histogram = new Map<number, number>();
     for (const { count } of personAppearances.values()) {
@@ -381,10 +419,8 @@ export function InsightsPage({
                     label={{ value: "Year", position: "insideBottom", offset: -10, fill: "#6b7280", fontSize: 13, fontWeight: 500 }}
                   />
                   <YAxis 
-                    scale="log"
-                    domain={[1, 'auto']}
                     tick={{ fill: "#6b7280", fontSize: 12 }}
-                    label={{ value: "Number of Papers (log scale)", angle: -90, position: "insideLeft", fill: "#6b7280", fontSize: 13, fontWeight: 500 }}
+                    label={{ value: "Number of Papers", angle: -90, position: "insideLeft", fill: "#6b7280", fontSize: 13, fontWeight: 500 }}
                   />
                   <Tooltip
                     contentStyle={{
@@ -482,7 +518,7 @@ export function InsightsPage({
               </ResponsiveContainer>
             </ChartContainer>
             <p className="text-xs text-muted-foreground mt-3">
-              Totals computed across {totalCommitteeSeats.toLocaleString("en-US")} committee seats in the dataset.
+              Computed from {totalCommitteeSeats.toLocaleString("en-US")} committee positions. Each person counted once per year (deduplicated across conferences).
             </p>
           </CardContent>
         </Card>
@@ -491,8 +527,7 @@ export function InsightsPage({
           <CardHeader className="pb-4">
             <CardTitle className="text-lg font-semibold">Committee Tenure</CardTitle>
             <CardDescription>
-              How many different years each individual has appeared on a committee. “6+” groups anyone with six or
-              more participations.
+              Number of unique years each individual has participated in committees (deduplicated: if someone is in multiple conferences in the same year, it counts as 1 year). "6+" groups anyone with six or more years.
             </CardDescription>
           </CardHeader>
           <CardContent>
