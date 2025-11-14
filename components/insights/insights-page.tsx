@@ -527,7 +527,7 @@ export function InsightsPage({
           <CardHeader className="pb-4">
             <CardTitle className="text-lg font-semibold">Committee Tenure</CardTitle>
             <CardDescription>
-              Number of unique years each individual has participated in committees (deduplicated: if someone is in multiple conferences in the same year, it counts as 1 year). "6+" groups anyone with six or more years.
+              Number of unique years each individual has participated in committees (deduplicated: if someone is in multiple conferences in the same year, it counts as 1 year). &quot;6+&quot; groups anyone with six or more years.
             </CardDescription>
           </CardHeader>
           <CardContent>
