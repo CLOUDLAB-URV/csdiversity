@@ -299,15 +299,19 @@ export function InsightsPage({
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                   data={turnoverSeries}
-                  margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.4} />
                   <XAxis
                     dataKey="year"
                     tick={{ fill: "#6b7280", fontSize: 12 }}
                     allowDecimals={false}
+                    label={{ value: "Year", position: "insideBottom", offset: -10, fill: "#6b7280", fontSize: 13, fontWeight: 500 }}
                   />
-                  <YAxis tick={{ fill: "#6b7280", fontSize: 12 }} />
+                  <YAxis 
+                    tick={{ fill: "#6b7280", fontSize: 12 }}
+                    label={{ value: "Number of Members", angle: -90, position: "insideLeft", fill: "#6b7280", fontSize: 13, fontWeight: 500 }}
+                  />
                   <Tooltip
                     formatter={(value: number, name, props) => [
                       value.toLocaleString("en-US"),
@@ -352,10 +356,17 @@ export function InsightsPage({
           <CardContent>
             <ChartContainer config={{}} className="h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={tenureBuckets} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
+                <BarChart data={tenureBuckets} margin={{ top: 10, right: 20, left: 20, bottom: 40 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.4} />
-                  <XAxis dataKey="label" tick={{ fill: "#6b7280", fontSize: 12 }} />
-                  <YAxis tick={{ fill: "#6b7280", fontSize: 12 }} />
+                  <XAxis 
+                    dataKey="label" 
+                    tick={{ fill: "#6b7280", fontSize: 12 }}
+                    label={{ value: "Years of Participation", position: "insideBottom", offset: -10, fill: "#6b7280", fontSize: 13, fontWeight: 500 }}
+                  />
+                  <YAxis 
+                    tick={{ fill: "#6b7280", fontSize: 12 }}
+                    label={{ value: "Number of People", angle: -90, position: "insideLeft", fill: "#6b7280", fontSize: 13, fontWeight: 500 }}
+                  />
                   <Tooltip
                     formatter={(value: number) => [`${value.toLocaleString("en-US")} people`, "Appearances"]}
                   />
