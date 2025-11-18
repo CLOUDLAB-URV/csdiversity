@@ -542,7 +542,8 @@ export function ClientBigTechAnalysisPage({ initialData, initialDataByRegion }: 
                         border: '1px solid #e5e7eb',
                         borderRadius: '8px',
                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                        padding: '12px'
+                        padding: '12px',
+                        pointerEvents: 'none'
                       }}
                       cursor={{ fill: 'rgba(0, 0, 0, 0.02)' }}
                       formatter={(value: any, name: any) => {
@@ -633,7 +634,8 @@ export function ClientBigTechAnalysisPage({ initialData, initialDataByRegion }: 
                         border: '1px solid #e5e7eb',
                         borderRadius: '8px',
                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                        padding: '12px'
+                        padding: '12px',
+                        pointerEvents: 'none'
                       }}
                       cursor={{ fill: 'rgba(0, 0, 0, 0.02)' }}
                       formatter={(value: any, name: any) => {
@@ -724,7 +726,7 @@ export function ClientBigTechAnalysisPage({ initialData, initialDataByRegion }: 
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.3} />
                     <XAxis dataKey="year" tick={{ fill: '#6b7280', fontSize: 12 }} />
                     <YAxis domain={[0, 100]} tick={{ fill: '#6b7280', fontSize: 12 }} label={{ value: 'Percentage', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#6b7280' } }} tickFormatter={(v: number) => `${Math.min(100, Math.max(0, Number(Number(v).toFixed(0))))}%`} />
-                    <Tooltip contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.98)', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', padding: '12px' }} formatter={(value: any, name: any) => [`${Math.min(100, Math.max(0, Number(Number(value).toFixed(2))))}%`, name]} />
+                    <Tooltip contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.98)', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', padding: '12px', pointerEvents: 'none' }} formatter={(value: any, name: any) => [`${Math.min(100, Math.max(0, Number(Number(value).toFixed(2))))}%`, name]} />
                     <Legend wrapperStyle={{ fontSize: '12px' }} />
                     <Bar dataKey='Academia' stackId="t" fill="#1f3b6f" radius={[0, 0, 0, 0]} />
                     <Bar dataKey='Big Tech' stackId="t" fill="#c5c5c5" radius={[4, 4, 0, 0]} />
@@ -802,7 +804,8 @@ export function ClientBigTechAnalysisPage({ initialData, initialDataByRegion }: 
                           border: '1px solid #e5e7eb', 
                           borderRadius: '8px', 
                           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', 
-                          padding: '12px' 
+                          padding: '12px',
+                          pointerEvents: 'none'
                         }} 
                         formatter={(value: any, name: any) => {
                           if (value === null || value === undefined) return ['N/A', name];
@@ -851,7 +854,8 @@ export function ClientBigTechAnalysisPage({ initialData, initialDataByRegion }: 
                           border: '1px solid #e5e7eb', 
                           borderRadius: '8px', 
                           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', 
-                          padding: '12px' 
+                          padding: '12px',
+                          pointerEvents: 'none'
                         }} 
                         formatter={(value: any, name: any) => {
                           const num = Number(value).toFixed(2);

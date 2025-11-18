@@ -631,6 +631,8 @@ export function ClientProgramCommitteeDistributionPage({
                         <Tooltip
                           cursor={{ fill: 'rgba(148, 163, 184, 0.08)' }}
                           content={<CountryTooltip colorMap={countryColorMap} labelFormatter={(value) => value} title={isSingleConferenceView ? 'Year' : 'Conference'} />}
+                          allowEscapeViewBox={{ x: true, y: true }}
+                          wrapperStyle={{ pointerEvents: 'none' }}
                         />
                         <Legend
                           iconType="rect"
@@ -674,6 +676,8 @@ export function ClientProgramCommitteeDistributionPage({
                         <Tooltip
                           cursor={{ fill: 'rgba(148, 163, 184, 0.08)' }}
                           content={<CountryTooltip colorMap={countryColorMap} labelFormatter={(value) => value} title={isSingleConferenceView ? 'Year' : 'Conference'} />}
+                          allowEscapeViewBox={{ x: true, y: true }}
+                          wrapperStyle={{ pointerEvents: 'none' }}
                         />
                         <Legend
                           iconType="rect"

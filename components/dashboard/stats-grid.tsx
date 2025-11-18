@@ -257,7 +257,6 @@ export const StatsGrid = memo(function StatsGrid({ continentData, asianTrends, b
 
     const entries = Array.from(totals.entries()).sort((a, b) => b[1] - a[1]);
     const topEntries = entries.slice(0, 10);
-    const otherValue = entries.slice(10).reduce((sum, [, value]) => sum + value, 0);
     const total = entries.reduce((sum, [, value]) => sum + value, 0);
 
     if (total === 0) {
@@ -275,12 +274,6 @@ export const StatsGrid = memo(function StatsGrid({ continentData, asianTrends, b
       colorMap.set(country, COUNTRY_COLORS[index % COUNTRY_COLORS.length]);
       return { name: country, value: percent };
     });
-
-    if (otherValue > 0) {
-      const percent = Number(((otherValue / total) * 100).toFixed(2));
-      colorMap.set('Other Countries', OTHER_COUNTRY_COLOR);
-      chartData.push({ name: 'Other Countries', value: percent });
-    }
 
     return { data: chartData, colorMap, totals, totalCount: total };
   }, [papersCountryRaw]);
@@ -423,7 +416,7 @@ export const StatsGrid = memo(function StatsGrid({ continentData, asianTrends, b
               <CardDescription>
                 {geoMode === 'continent'
                   ? 'Overall breakdown of accepted papers across conferences by continent.'
-                  : 'Top countries share of accepted papers across all conferences (top 10 shown, others grouped).'}
+                  : 'Top countries share of accepted papers across all conferences (top 10 shown).'}
               </CardDescription>
             </div>
             <div className="hidden sm:block">
@@ -502,6 +495,8 @@ export const StatsGrid = memo(function StatsGrid({ continentData, asianTrends, b
                   <Tooltip
                     cursor={{ fill: 'rgba(148, 163, 184, 0.08)' }}
                     content={<CountryTooltip colorMap={countryChart.colorMap} title="Conference" />}
+                    allowEscapeViewBox={{ x: true, y: true }}
+                    wrapperStyle={{ pointerEvents: 'none' }}
                   />
                   <Bar dataKey="value" radius={[4, 4, 4, 4]}>
                     {countryChart.data.map((entry, index) => (

@@ -291,3 +291,5 @@ For issues or questions:
 - Review [Next.js Static Export docs](https://nextjs.org/docs/app/building-your-application/deploying/static-exports)
 - Open an issue on GitHub
 
+
+

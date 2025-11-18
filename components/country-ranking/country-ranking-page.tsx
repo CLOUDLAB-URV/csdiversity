@@ -29,6 +29,7 @@ const COUNTRY_ALIASES: Record<string, string> = {
   "united kingdom of great britain and northern ireland": "United Kingdom",
   "south korea": "South Korea",
   "republic of korea": "South Korea",
+  "korea, republic of": "South Korea",
   "korea, south": "South Korea",
   "korea (south)": "South Korea",
   "north korea": "North Korea",
@@ -43,6 +44,10 @@ const COUNTRY_ALIASES: Record<string, string> = {
   "russian federation": "Russia",
   "uae": "United Arab Emirates",
   "u.a.e.": "United Arab Emirates",
+  "iran, islamic republic of": "Iran",
+  "islamic republic of iran": "Iran",
+  "venezuela, bolivarian republic of": "Venezuela",
+  "bolivarian republic of venezuela": "Venezuela",
 };
 
 const normalizeCountryName = (country: string | null | undefined): string => {
@@ -58,11 +63,29 @@ const normalizeCountryName = (country: string | null | undefined): string => {
   if (lower === "unknown" || lower === "n/a") return "Unknown";
   if (lower === "other") return "Other";
 
+  if (lower.startsWith("republic of")) {
+    const rest = trimmed.substring("Republic of".length).trim();
+    if (rest) {
+      return `Republic of ${rest
+        .split(" ")
+        .map((part) => {
+          if (!part) return part;
+          if (part.length === 1) return part.toUpperCase();
+          return part[0].toUpperCase() + part.slice(1).toLowerCase();
+        })
+        .join(" ")}`;
+    }
+    return "Republic Of";
+  }
+
   return trimmed
     .replace(/\s+/g, " ")
     .split(" ")
-    .map((part) => {
+    .map((part, index, array) => {
       if (!part) return part;
+      if (part.toLowerCase() === "of" && index > 0 && index < array.length - 1) {
+        return "of";
+      }
       if (part.length === 1) return part.toUpperCase();
       return part[0].toUpperCase() + part.slice(1).toLowerCase();
     })
@@ -83,8 +106,35 @@ const parseCountriesFromValue = (value: unknown): string[] => {
   if (typeof value === "string") {
     const cleaned = value.replace(/\r?\n/g, " ").trim();
     if (!cleaned) return [];
-    return cleaned
-      .split(/[;,]/)
+    
+    const parts: string[] = [];
+    const separators = /[;,]/g;
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = separators.exec(cleaned)) !== null) {
+      const before = cleaned.substring(lastIndex, match.index).trim();
+      const after = cleaned.substring(match.index + 1).trim();
+      
+      const afterLower = after.toLowerCase();
+      if (afterLower.startsWith("republic of") || afterLower.startsWith("islamic republic of") || afterLower.startsWith("bolivarian republic of")) {
+        continue;
+      }
+      
+      if (before.trim()) {
+        parts.push(before.trim());
+      }
+      lastIndex = match.index + 1;
+    }
+    
+    const remaining = cleaned.substring(lastIndex).trim();
+    if (remaining) {
+      parts.push(remaining);
+    }
+    
+    const finalParts = parts.length > 0 ? parts : cleaned.split(/[;,]/).map(p => p.trim()).filter(Boolean);
+    
+    return finalParts
       .map((part) => normalizeCountryName(part))
       .filter(Boolean)
       .filter((country) => country !== "Unknown" && country !== "Other");
@@ -142,15 +192,22 @@ interface RankingSummary {
   availableCountries?: string[];
 }
 
-const computeCountryRanking = (rows: any[]): RankingSummary => {
+const computeCountryRanking = (rows: any[], conferenceFilter?: string): RankingSummary => {
   if (!rows || rows.length === 0) {
     return { type: "country", entries: [], totalRows: 0, unmappedCount: 0 };
   }
 
+  const filteredRows = conferenceFilter && conferenceFilter !== "all"
+    ? rows.filter((row) => {
+        const conf = String(row?.conference ?? row?.Conference ?? "").trim();
+        return conf === conferenceFilter;
+      })
+    : rows;
+
   const totals = new Map<string, number>();
   let unmapped = 0;
 
-  rows.forEach((row) => {
+  filteredRows.forEach((row) => {
     const countries = parseCountriesFromValue(row?.countries ?? row?.Countries ?? row?.country ?? row?.Country);
     const unique = Array.from(new Set(countries));
     if (unique.length === 0) {
@@ -165,7 +222,7 @@ const computeCountryRanking = (rows: any[]): RankingSummary => {
 
   const totalWeight = Array.from(totals.values()).reduce((sum, value) => sum + value, 0);
   if (totalWeight === 0) {
-    return { type: "country", entries: [], totalRows: rows.length, unmappedCount: unmapped };
+    return { type: "country", entries: [], totalRows: filteredRows.length, unmappedCount: unmapped };
   }
 
   const entries: RankingEntry[] = Array.from(totals.entries())
@@ -182,21 +239,28 @@ const computeCountryRanking = (rows: any[]): RankingSummary => {
   return {
     type: "country",
     entries,
-    totalRows: rows.length,
+    totalRows: filteredRows.length,
     unmappedCount: unmapped,
   };
 };
 
-const computeInstitutionRanking = (rows: any[]): RankingSummary => {
+const computeInstitutionRanking = (rows: any[], conferenceFilter?: string): RankingSummary => {
   if (!rows || rows.length === 0) {
     return { type: "institution", entries: [], totalRows: 0, unmappedCount: 0, availableCountries: [] };
   }
+
+  const filteredRows = conferenceFilter && conferenceFilter !== "all"
+    ? rows.filter((row) => {
+        const conf = String(row?.conference ?? row?.Conference ?? "").trim();
+        return conf === conferenceFilter;
+      })
+    : rows;
 
   const totals = new Map<string, { institution: string; country?: string; weight: number }>();
   const countrySet = new Set<string>();
   let unmapped = 0;
 
-  rows.forEach((row) => {
+  filteredRows.forEach((row) => {
     const tokens = parseInstitutionsFromValue(row?.institutions ?? row?.Institutions ?? "");
     if (tokens.length === 0) {
       unmapped += 1;
@@ -220,7 +284,7 @@ const computeInstitutionRanking = (rows: any[]): RankingSummary => {
     return {
       type: "institution",
       entries: [],
-      totalRows: rows.length,
+      totalRows: filteredRows.length,
       unmappedCount: unmapped,
       availableCountries: Array.from(countrySet).sort(),
     };
@@ -247,7 +311,7 @@ const computeInstitutionRanking = (rows: any[]): RankingSummary => {
   return {
     type: "institution",
     entries,
-    totalRows: rows.length,
+    totalRows: filteredRows.length,
     unmappedCount: unmapped,
     availableCountries,
   };
@@ -263,11 +327,22 @@ export function CountryRankingPage({ papersCountryRaw, committeeCountryRaw }: Co
   const [rankingMode, setRankingMode] = useState<"country" | "institution">("country");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCountryFilter, setSelectedCountryFilter] = useState<string>("all");
+  const [selectedConferenceFilter, setSelectedConferenceFilter] = useState<string>("all");
 
-  const papersCountryRanking = useMemo(() => computeCountryRanking(papersCountryRaw), [papersCountryRaw]);
-  const papersInstitutionRanking = useMemo(() => computeInstitutionRanking(papersCountryRaw), [papersCountryRaw]);
-  const committeeCountryRanking = useMemo(() => computeCountryRanking(committeeCountryRaw), [committeeCountryRaw]);
-  const committeeInstitutionRanking = useMemo(() => computeInstitutionRanking(committeeCountryRaw), [committeeCountryRaw]);
+  const availableConferences = useMemo(() => {
+    const confs = new Set<string>();
+    const currentData = activeTab === "papers" ? papersCountryRaw : committeeCountryRaw;
+    currentData.forEach((row) => {
+      const conf = String(row?.conference ?? row?.Conference ?? "").trim();
+      if (conf) confs.add(conf);
+    });
+    return Array.from(confs).sort();
+  }, [papersCountryRaw, committeeCountryRaw, activeTab]);
+
+  const papersCountryRanking = useMemo(() => computeCountryRanking(papersCountryRaw, selectedConferenceFilter), [papersCountryRaw, selectedConferenceFilter]);
+  const papersInstitutionRanking = useMemo(() => computeInstitutionRanking(papersCountryRaw, selectedConferenceFilter), [papersCountryRaw, selectedConferenceFilter]);
+  const committeeCountryRanking = useMemo(() => computeCountryRanking(committeeCountryRaw, selectedConferenceFilter), [committeeCountryRaw, selectedConferenceFilter]);
+  const committeeInstitutionRanking = useMemo(() => computeInstitutionRanking(committeeCountryRaw, selectedConferenceFilter), [committeeCountryRaw, selectedConferenceFilter]);
 
   const getRankingFor = useCallback(
     (tab: "papers" | "committee", mode: "country" | "institution"): RankingSummary => {
@@ -313,6 +388,7 @@ export function CountryRankingPage({ papersCountryRaw, committeeCountryRaw }: Co
     setActiveTab(nextTab);
     setSearchTerm("");
     setSelectedCountryFilter("all");
+    setSelectedConferenceFilter("all");
     trackEvent({
       action: "ranking_tab_change",
       category: "country_ranking",
@@ -336,6 +412,16 @@ export function CountryRankingPage({ papersCountryRaw, committeeCountryRaw }: Co
     setSelectedCountryFilter(value);
     trackEvent({
       action: "ranking_country_filter",
+      category: "country_ranking",
+      label: value,
+      params: { tab: activeTab, mode: rankingMode },
+    });
+  }, [activeTab, rankingMode]);
+
+  const handleConferenceFilterChange = useCallback((value: string) => {
+    setSelectedConferenceFilter(value);
+    trackEvent({
+      action: "ranking_conference_filter",
       category: "country_ranking",
       label: value,
       params: { tab: activeTab, mode: rankingMode },
@@ -372,6 +458,9 @@ export function CountryRankingPage({ papersCountryRaw, committeeCountryRaw }: Co
             availableCountries={papersInstitutionRanking.availableCountries}
             selectedCountryFilter={selectedCountryFilter}
             onCountryFilterChange={handleCountryFilterChange}
+            availableConferences={availableConferences}
+            selectedConferenceFilter={selectedConferenceFilter}
+            onConferenceFilterChange={handleConferenceFilterChange}
           />
         </TabsContent>
         <TabsContent value="committee">
@@ -388,6 +477,9 @@ export function CountryRankingPage({ papersCountryRaw, committeeCountryRaw }: Co
             availableCountries={committeeInstitutionRanking.availableCountries}
             selectedCountryFilter={selectedCountryFilter}
             onCountryFilterChange={handleCountryFilterChange}
+            availableConferences={availableConferences}
+            selectedConferenceFilter={selectedConferenceFilter}
+            onConferenceFilterChange={handleConferenceFilterChange}
           />
         </TabsContent>
       </Tabs>
@@ -408,6 +500,9 @@ interface RankingCardProps {
   availableCountries?: string[];
   selectedCountryFilter: string;
   onCountryFilterChange: (value: string) => void;
+  availableConferences: string[];
+  selectedConferenceFilter: string;
+  onConferenceFilterChange: (value: string) => void;
 }
 
 function RankingCard({
@@ -423,6 +518,9 @@ function RankingCard({
   availableCountries,
   selectedCountryFilter,
   onCountryFilterChange,
+  availableConferences,
+  selectedConferenceFilter,
+  onConferenceFilterChange,
 }: RankingCardProps) {
   const isInstitutionMode = mode === "institution";
   const shareTooltip = isInstitutionMode
@@ -474,21 +572,38 @@ function RankingCard({
                 </Badge>
               ) : null}
             </div>
-            {isInstitutionMode && (availableCountries && availableCountries.length > 0) ? (
-              <Select value={selectedCountryFilter} onValueChange={onCountryFilterChange}>
-                <SelectTrigger className="h-10">
-                  <SelectValue placeholder="Filter by country" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All countries</SelectItem>
-                  {availableCountries.map((country) => (
-                    <SelectItem key={country} value={country}>
-                      {country}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : null}
+            <div className="flex flex-col gap-3 sm:flex-row">
+              {availableConferences && availableConferences.length > 0 ? (
+                <Select value={selectedConferenceFilter} onValueChange={onConferenceFilterChange}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Filter by conference" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All conferences</SelectItem>
+                    {availableConferences.map((conference) => (
+                      <SelectItem key={conference} value={conference}>
+                        {conference}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : null}
+              {isInstitutionMode && (availableCountries && availableCountries.length > 0) ? (
+                <Select value={selectedCountryFilter} onValueChange={onCountryFilterChange}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Filter by country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All countries</SelectItem>
+                    {availableCountries.map((country) => (
+                      <SelectItem key={country} value={country}>
+                        {country}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : null}
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -500,7 +615,6 @@ function RankingCard({
                 <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <th className="w-16 px-4 py-3">Rank</th>
                   <th className="px-4 py-3">{isInstitutionMode ? "Institution" : "Country"}</th>
-                  {isInstitutionMode && <th className="w-40 px-4 py-3">Country</th>}
                   <th className="w-28 px-4 py-3 text-right">
                     <span className="inline-flex items-center justify-end gap-1.5" title={shareTooltip}>
                       Share %
@@ -520,7 +634,7 @@ function RankingCard({
               <tbody>
                 {entries.length === 0 ? (
                   <tr>
-                    <td colSpan={isInstitutionMode ? 5 : 4} className="px-4 py-6 text-center text-sm text-muted-foreground">
+                    <td colSpan={4} className="px-4 py-6 text-center text-sm text-muted-foreground">
                       No data available.
                     </td>
                   </tr>
@@ -542,9 +656,6 @@ function RankingCard({
                           <td className="px-4 py-3 font-medium text-foreground">{entry.country}</td>
                         ) : (
                           <td className="px-4 py-3 font-medium text-foreground">{entry.institution}</td>
-                        )}
-                        {isInstitutionMode && (
-                          <td className="px-4 py-3 text-muted-foreground">{entry.type === "institution" ? entry.country ?? "—" : ""}</td>
                         )}
                         <td className="px-4 py-3 text-right tabular-nums">{entry.percent.toFixed(2)}%</td>
                         <td className="px-4 py-3 text-right tabular-nums">{entry.totalWeight.toFixed(2)}</td>

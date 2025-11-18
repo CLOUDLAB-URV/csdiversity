@@ -41,12 +41,15 @@ export function CountryTooltip({
   const formattedLabel = labelFormatter ? labelFormatter(String(label ?? "")) : label;
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white/95 p-4 shadow-xl backdrop-blur dark:border-gray-800 dark:bg-gray-900/90">
+    <div 
+      className="rounded-lg border border-gray-200 bg-white/95 p-4 shadow-xl backdrop-blur dark:border-gray-800 dark:bg-gray-900/90"
+      style={{ pointerEvents: 'none' }}
+    >
       <div className="mb-3">
         {title ? <div className="text-xs uppercase text-muted-foreground">{title}</div> : null}
         <div className="text-sm font-semibold text-foreground">{formattedLabel}</div>
       </div>
-      <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
+      <div className="space-y-2">
         {rows.map((row) => (
           <div key={row.name} className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
