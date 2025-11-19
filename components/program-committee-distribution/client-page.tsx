@@ -64,6 +64,7 @@ const COUNTRY_ALIASES: Record<string, string> = {
   'united kingdom of great britain and northern ireland': 'United Kingdom',
   'south korea': 'South Korea',
   'republic of korea': 'South Korea',
+  'korea, republic of': 'South Korea',
   'korea, south': 'South Korea',
   'korea (south)': 'South Korea',
   'north korea': 'North Korea',
@@ -78,6 +79,10 @@ const COUNTRY_ALIASES: Record<string, string> = {
   'russian federation': 'Russia',
   'uae': 'United Arab Emirates',
   'u.a.e.': 'United Arab Emirates',
+  'iran, islamic republic of': 'Iran',
+  'islamic republic of iran': 'Iran',
+  'venezuela, bolivarian republic of': 'Venezuela',
+  'bolivarian republic of venezuela': 'Venezuela',
 };
 
 type CustomLegendEntry = {
@@ -101,11 +106,29 @@ const normalizeCountryName = (country: string | null | undefined): string => {
   if (lower === 'unknown' || lower === 'n/a') return 'Unknown';
   if (lower === 'other') return 'Other';
 
+  if (lower.startsWith("republic of")) {
+    const rest = trimmed.substring("Republic of".length).trim();
+    if (rest) {
+      return `Republic of ${rest
+        .split(" ")
+        .map((part) => {
+          if (!part) return part;
+          if (part.length === 1) return part.toUpperCase();
+          return part[0].toUpperCase() + part.slice(1).toLowerCase();
+        })
+        .join(" ")}`;
+    }
+    return "Republic Of";
+  }
+
   return trimmed
     .replace(/\s+/g, ' ')
     .split(' ')
-    .map(part => {
+    .map((part, index, array) => {
       if (!part) return part;
+      if (part.toLowerCase() === "of" && index > 0 && index < array.length - 1) {
+        return "of";
+      }
       if (part.length === 1) return part.toUpperCase();
       return part[0].toUpperCase() + part.slice(1).toLowerCase();
     })
@@ -135,9 +158,35 @@ const parseCountriesFromValue = (value: unknown): string[] => {
   if (typeof value === 'string') {
     const cleaned = value.replace(/\r?\n/g, ' ').trim();
     if (!cleaned) return [];
-    const separators = /[;,]/;
-    return cleaned
-      .split(separators)
+    
+    const parts: string[] = [];
+    const separators = /[;,]/g;
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = separators.exec(cleaned)) !== null) {
+      const before = cleaned.substring(lastIndex, match.index).trim();
+      const after = cleaned.substring(match.index + 1).trim();
+      
+      const afterLower = after.toLowerCase();
+      if (afterLower.startsWith("republic of") || afterLower.startsWith("islamic republic of") || afterLower.startsWith("bolivarian republic of")) {
+        continue;
+      }
+      
+      if (before.trim()) {
+        parts.push(before.trim());
+      }
+      lastIndex = match.index + 1;
+    }
+    
+    const remaining = cleaned.substring(lastIndex).trim();
+    if (remaining) {
+      parts.push(remaining);
+    }
+    
+    const finalParts = parts.length > 0 ? parts : cleaned.split(/[;,]/).map(p => p.trim()).filter(Boolean);
+    
+    return finalParts
       .map(part => normalizeCountryName(part))
       .filter(Boolean)
       .filter(country => country !== 'Unknown' && country !== 'Other');
