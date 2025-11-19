@@ -545,7 +545,31 @@ export const StatsGrid = memo(function StatsGrid({ continentData, asianTrends, b
                     cursor={{ fill: 'rgba(148, 163, 184, 0.08)' }}
                     content={<CountryTooltip colorMap={countryChart.colorMap} title="Conference" />}
                     allowEscapeViewBox={{ x: true, y: true }}
-                    wrapperStyle={{ pointerEvents: 'none' }}
+                    wrapperStyle={{ 
+                      pointerEvents: 'none',
+                      transform: 'translateX(0)',
+                      maxWidth: '100vw'
+                    }}
+                    contentStyle={{
+                      maxWidth: 'min(320px, calc(100vw - 20px))',
+                      right: 'auto',
+                      left: 'auto'
+                    }}
+                    position={(props: any) => {
+                      const { coordinate, viewBox } = props;
+                      if (!coordinate || !viewBox) return coordinate;
+                      
+                      const tooltipWidth = 320;
+                      const margin = 15;
+                      const chartWidth = viewBox.width;
+                      
+                      if (coordinate.x > chartWidth * 0.55) {
+                        const newX = coordinate.x - tooltipWidth - margin;
+                        return { x: Math.max(viewBox.x + 5, newX), y: coordinate.y };
+                      }
+                      
+                      return coordinate;
+                    }}
                   />
                   <Bar dataKey="value" radius={[4, 4, 4, 4]}>
                     {countryChart.data.map((entry, index) => (

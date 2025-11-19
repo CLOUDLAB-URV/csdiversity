@@ -452,7 +452,11 @@ export function ClientAsianTrendsPage({ initialData }: ClientAsianTrendsPageProp
                         border: '1px solid #e5e7eb',
                         borderRadius: '8px',
                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                        padding: '12px'
+                        padding: '12px',
+                        maxWidth: 'min(270px, calc(100vw - 20px))'
+                      }}
+                      wrapperStyle={{
+                        maxWidth: '100vw'
                       }}
                       formatter={(value: any, name: any, props: any) => {
                         if (name === 'mean') {
@@ -460,6 +464,21 @@ export function ClientAsianTrendsPage({ initialData }: ClientAsianTrendsPageProp
                           return [`${Number(value).toFixed(2)}% (σ=${Number(sd).toFixed(2)})`, 'Mean'];
                         }
                         return [value, name];
+                      }}
+                      position={(props: any) => {
+                        const { coordinate, viewBox } = props;
+                        if (!coordinate || !viewBox) return coordinate;
+                        
+                        const tooltipWidth = 270;
+                        const margin = 15;
+                        const chartWidth = viewBox.width;
+                        
+                        if (coordinate.x > chartWidth * 0.55) {
+                          const newX = coordinate.x - tooltipWidth - margin;
+                          return { x: Math.max(viewBox.x + 5, newX), y: coordinate.y };
+                        }
+                        
+                        return coordinate;
                       }}
                     />
                     <Bar dataKey="mean" fill="#1681c5" radius={[4, 4, 0, 0]} />

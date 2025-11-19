@@ -543,12 +543,31 @@ export function ClientBigTechAnalysisPage({ initialData, initialDataByRegion }: 
                         borderRadius: '8px',
                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                         padding: '12px',
-                        pointerEvents: 'none'
+                        pointerEvents: 'none',
+                        maxWidth: 'min(270px, calc(100vw - 20px))'
+                      }}
+                      wrapperStyle={{
+                        maxWidth: '100vw'
                       }}
                       cursor={{ fill: 'rgba(0, 0, 0, 0.02)' }}
                       formatter={(value: any, name: any) => {
                         const num = Math.min(100, Math.max(0, Number(Number(value).toFixed(2))));
                         return [`${num}%`, name];
+                      }}
+                      position={(props: any) => {
+                        const { coordinate, viewBox } = props;
+                        if (!coordinate || !viewBox) return coordinate;
+                        
+                        const tooltipWidth = 270;
+                        const margin = 15;
+                        const chartWidth = viewBox.width;
+                        
+                        if (coordinate.x > chartWidth * 0.55) {
+                          const newX = coordinate.x - tooltipWidth - margin;
+                          return { x: Math.max(viewBox.x + 5, newX), y: coordinate.y };
+                        }
+                        
+                        return coordinate;
                       }}
                     />
                     <Legend 
@@ -635,12 +654,31 @@ export function ClientBigTechAnalysisPage({ initialData, initialDataByRegion }: 
                         borderRadius: '8px',
                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                         padding: '12px',
-                        pointerEvents: 'none'
+                        pointerEvents: 'none',
+                        maxWidth: 'min(270px, calc(100vw - 20px))'
+                      }}
+                      wrapperStyle={{
+                        maxWidth: '100vw'
                       }}
                       cursor={{ fill: 'rgba(0, 0, 0, 0.02)' }}
                       formatter={(value: any, name: any) => {
                         const num = Math.min(100, Math.max(0, Number(Number(value).toFixed(2))));
                         return [`${num}%`, name];
+                      }}
+                      position={(props: any) => {
+                        const { coordinate, viewBox } = props;
+                        if (!coordinate || !viewBox) return coordinate;
+                        
+                        const tooltipWidth = 270;
+                        const margin = 15;
+                        const chartWidth = viewBox.width;
+                        
+                        if (coordinate.x > chartWidth * 0.55) {
+                          const newX = coordinate.x - tooltipWidth - margin;
+                          return { x: Math.max(viewBox.x + 5, newX), y: coordinate.y };
+                        }
+                        
+                        return coordinate;
                       }}
                     />
                     <Legend 
@@ -726,7 +764,42 @@ export function ClientBigTechAnalysisPage({ initialData, initialDataByRegion }: 
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.3} />
                     <XAxis dataKey="year" tick={{ fill: '#6b7280', fontSize: 12 }} />
                     <YAxis domain={[0, 100]} tick={{ fill: '#6b7280', fontSize: 12 }} label={{ value: 'Percentage', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#6b7280' } }} tickFormatter={(v: number) => `${Math.min(100, Math.max(0, Number(Number(v).toFixed(0))))}%`} />
-                    <Tooltip contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.98)', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', padding: '12px', pointerEvents: 'none' }} formatter={(value: any, name: any) => [`${Math.min(100, Math.max(0, Number(Number(value).toFixed(2))))}%`, name]} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.98)', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', padding: '12px', pointerEvents: 'none' }} 
+                      formatter={(value: any, name: any) => [`${Math.min(100, Math.max(0, Number(Number(value).toFixed(2))))}%`, name]} 
+                      position={(props: any) => {
+                        const { coordinate, viewBox } = props;
+                        if (!coordinate || !viewBox) return coordinate;
+                        
+                        const tooltipWidth = 270;
+                        const margin = 15;
+                        const chartWidth = viewBox.width;
+                        
+                        if (typeof window !== 'undefined') {
+                          const viewportWidth = window.innerWidth;
+                          const svgElement = document.querySelector('svg.recharts-surface');
+                          if (svgElement) {
+                            const svgRect = svgElement.getBoundingClientRect();
+                            const svgLeft = svgRect.left;
+                            const scaleX = chartWidth / svgRect.width;
+                            const tooltipScreenX = svgLeft + (coordinate.x / scaleX);
+                            
+                            if (tooltipScreenX + tooltipWidth + margin > viewportWidth) {
+                              const newScreenX = tooltipScreenX - tooltipWidth - margin;
+                              const newX = (newScreenX - svgLeft) * scaleX;
+                              return { x: Math.max(viewBox.x + 5, newX), y: coordinate.y };
+                            }
+                          }
+                        }
+                        
+                        if (coordinate.x > chartWidth * 0.5) {
+                          const newX = coordinate.x - tooltipWidth - margin;
+                          return { x: Math.max(viewBox.x + 5, newX), y: coordinate.y };
+                        }
+                        
+                        return coordinate;
+                      }}
+                    />
                     <Legend wrapperStyle={{ fontSize: '12px' }} />
                     <Bar dataKey='Academia' stackId="t" fill="#1f3b6f" radius={[0, 0, 0, 0]} />
                     <Bar dataKey='Big Tech' stackId="t" fill="#c5c5c5" radius={[4, 4, 0, 0]} />

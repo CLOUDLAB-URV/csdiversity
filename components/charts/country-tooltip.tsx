@@ -42,8 +42,12 @@ export function CountryTooltip({
 
   return (
     <div 
-      className="rounded-lg border border-gray-200 bg-white/95 p-4 shadow-xl backdrop-blur dark:border-gray-800 dark:bg-gray-900/90"
-      style={{ pointerEvents: 'none' }}
+      className="rounded-lg border border-gray-200 bg-white/95 p-4 shadow-xl backdrop-blur dark:border-gray-800 dark:bg-gray-900/90 max-w-[320px] z-50"
+      style={{ 
+        pointerEvents: 'none',
+        maxWidth: 'min(320px, calc(100vw - 20px))',
+        wordWrap: 'break-word'
+      }}
     >
       <div className="mb-3">
         {title ? <div className="text-xs uppercase text-muted-foreground">{title}</div> : null}
