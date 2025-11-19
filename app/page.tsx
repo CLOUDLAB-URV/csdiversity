@@ -122,7 +122,7 @@ export default async function Dashboard() {
           CSdiversity
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl">
-          Comprehensive visualization and analysis of academic conference data from systems and networks conferences
+          Comprehensive visualization and analysis of academic conference data from systems research conferences
         </p>
       </div>
 

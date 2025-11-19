@@ -554,6 +554,7 @@ export function ClientBigTechAnalysisPage({ initialData, initialDataByRegion }: 
                         const num = Math.min(100, Math.max(0, Number(Number(value).toFixed(2))));
                         return [`${num}%`, name];
                       }}
+                      // @ts-expect-error - Recharts Tooltip position accepts function but types are incomplete
                       position={(props: any) => {
                         const { coordinate, viewBox } = props;
                         if (!coordinate || !viewBox) return coordinate;
@@ -665,6 +666,7 @@ export function ClientBigTechAnalysisPage({ initialData, initialDataByRegion }: 
                         const num = Math.min(100, Math.max(0, Number(Number(value).toFixed(2))));
                         return [`${num}%`, name];
                       }}
+                      // @ts-expect-error - Recharts Tooltip position accepts function but types are incomplete
                       position={(props: any) => {
                         const { coordinate, viewBox } = props;
                         if (!coordinate || !viewBox) return coordinate;
@@ -767,6 +769,7 @@ export function ClientBigTechAnalysisPage({ initialData, initialDataByRegion }: 
                     <Tooltip 
                       contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.98)', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', padding: '12px', pointerEvents: 'none' }} 
                       formatter={(value: any, name: any) => [`${Math.min(100, Math.max(0, Number(Number(value).toFixed(2))))}%`, name]} 
+                      // @ts-expect-error - Recharts Tooltip position accepts function but types are incomplete
                       position={(props: any) => {
                         const { coordinate, viewBox } = props;
                         if (!coordinate || !viewBox) return coordinate;

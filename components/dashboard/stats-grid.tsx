@@ -555,6 +555,7 @@ export const StatsGrid = memo(function StatsGrid({ continentData, asianTrends, b
                       right: 'auto',
                       left: 'auto'
                     }}
+                    // @ts-expect-error - Recharts Tooltip position accepts function but types are incomplete
                     position={(props: any) => {
                       const { coordinate, viewBox } = props;
                       if (!coordinate || !viewBox) return coordinate;

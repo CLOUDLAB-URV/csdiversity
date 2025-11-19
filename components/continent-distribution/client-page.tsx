@@ -708,6 +708,7 @@ export function ClientContinentDistributionPage({
                             right: 'auto',
                             left: 'auto'
                           }}
+                          // @ts-expect-error - Recharts Tooltip position accepts function but types are incomplete
                           position={(props: any) => {
                             const { coordinate, viewBox } = props;
                             if (!coordinate || !viewBox) return coordinate;
@@ -777,6 +778,7 @@ export function ClientContinentDistributionPage({
                             right: 'auto',
                             left: 'auto'
                           }}
+                          // @ts-expect-error - Recharts Tooltip position accepts function but types are incomplete
                           position={(props: any) => {
                             const { coordinate, viewBox } = props;
                             if (!coordinate || !viewBox) return coordinate;

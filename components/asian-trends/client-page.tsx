@@ -465,6 +465,7 @@ export function ClientAsianTrendsPage({ initialData }: ClientAsianTrendsPageProp
                         }
                         return [value, name];
                       }}
+                      // @ts-expect-error - Recharts Tooltip position accepts function but types are incomplete
                       position={(props: any) => {
                         const { coordinate, viewBox } = props;
                         if (!coordinate || !viewBox) return coordinate;
